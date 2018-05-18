@@ -25,5 +25,5 @@ deploy:
     secure: PLEASE_REPLACE_ME
   on:
     tags: true
-    repo: jcollado/easy_schemas
+    repo: jcollado/schemania
     python: 3.6

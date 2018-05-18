@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
-SPHINXPROJ    = easy_schemas
+SPHINXPROJ    = schemania
 SOURCEDIR     = .
 BUILDDIR      = _build
 

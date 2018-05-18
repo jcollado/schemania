@@ -32,7 +32,7 @@ def default_type_formatter(error):
     """Format type errors.
 
     :param error: Error to be formated
-    :type error: easy_schemas.error.ValidationTypeError
+    :type error: schemania.error.ValidationTypeError
     :returns: Error string representation
     :rtype: str
 
@@ -57,7 +57,7 @@ def default_multiple_formatter(error):
     """Format multiple errors.
 
     :param error: Error to be formated
-    :type error: easy_schemas.error.MultipleError
+    :type error: schemania.error.MultipleError
     :returns: Error string representation
     :rtype: str
 

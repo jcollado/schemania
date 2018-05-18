@@ -2,16 +2,16 @@
 
 import pytest
 
-from easy_schemas.error import (
+from schemania.error import (
     ValidationTypeError,
     ValidationMultipleError,
 )
-from easy_schemas.formatter import (
+from schemania.formatter import (
     _format_path,
     default_type_formatter,
     default_multiple_formatter,
 )
-from easy_schemas.validator import (
+from schemania.validator import (
     TypeValidator,
     ListValidator,
 )

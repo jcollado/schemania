@@ -12,7 +12,7 @@ To install Easy Schemas, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install easy_schemas
+    $ pip install schemania
 
 This is the preferred method to install Easy Schemas, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/jcollado/easy_schemas
+    $ git clone git://github.com/jcollado/schemania
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/jcollado/easy_schemas/tarball/master
+    $ curl  -OL https://github.com/jcollado/schemania/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/jcollado/easy_schemas
-.. _tarball: https://github.com/jcollado/easy_schemas/tarball/master
+.. _Github repo: https://github.com/jcollado/schemania
+.. _tarball: https://github.com/jcollado/schemania/tarball/master

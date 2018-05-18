@@ -22,7 +22,7 @@ class ValidationTypeError(ValidationError):
     This happens when data doesn't match the expected type.
 
     :param validator: Validator that found the type error
-    :type validator: easy_schemas.validator.Validator
+    :type validator: schemania.validator.Validator
     :param data: Data that failed to validate
     :type data: object
 
@@ -41,9 +41,9 @@ class ValidationMultipleError(ValidationError):
     structure.
 
     :param validator: Validator that found the type error
-    :type validator: easy_schemas.validator.Validator
+    :type validator: schemania.validator.Validator
     :param errors: Errors that were found in the data structure
-    :type errors: easy_schemas.error.ValidationError
+    :type errors: schemania.error.ValidationError
     :param data: Data that failed to validate
     :type data: object
 

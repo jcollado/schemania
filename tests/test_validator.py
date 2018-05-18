@@ -1,11 +1,11 @@
 """Schema validator tests."""
 import pytest
 
-from easy_schemas.error import (
+from schemania.error import (
     ValidationMultipleError,
     ValidationTypeError,
 )
-from easy_schemas.validator import (
+from schemania.validator import (
     DictValidator,
     ListValidator,
     TypeValidator,

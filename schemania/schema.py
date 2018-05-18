@@ -5,15 +5,15 @@ are compiled into validators that are used to check if some data matches the
 expected structure later.
 
 """
-from easy_schemas.error import (
+from schemania.error import (
     ValidationMultipleError,
     ValidationTypeError,
 )
-from easy_schemas.formatter import (
+from schemania.formatter import (
     default_multiple_formatter,
     default_type_formatter,
 )
-from easy_schemas.validator import (
+from schemania.validator import (
     DictValidator,
     ListValidator,
     TypeValidator,
@@ -46,7 +46,7 @@ class Schema(object):
         :param raw_schema: Raw schema
         :param raw_schema: object
         :returns: Validator that validates data structures
-        :rtype: easy_schemas.validator.Validator
+        :rtype: schemania.validator.Validator
 
         """
         if raw_schema in (str, int):
@@ -71,7 +71,7 @@ class Schema(object):
 
         :param data: Data structure to validate.
         :type data: object
-        :raises: easy_schemas.error.ValidationError if some problem is found
+        :raises: schemania.error.ValidationError if some problem is found
 
         """
         self.validator.validate(data)

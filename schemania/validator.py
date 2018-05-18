@@ -4,7 +4,7 @@ Validators are the objects that are used to check if a given data matches the
 expected structure.
 
 """
-from easy_schemas.error import (
+from schemania.error import (
     ValidationError,
     ValidationMultipleError,
     ValidationTypeError,
@@ -19,7 +19,7 @@ class TypeValidator(Validator):
     """Validator that checks data by its type.
 
     :param schema: Schema that created this validator
-    :type schema: easy_schemas.schema.Schema
+    :type schema: schemania.schema.Schema
 
     """
     def __init__(self, schema, type_):
@@ -41,9 +41,9 @@ class ListValidator(Validator):
     """Validator that checks elements in a list.
 
     :param schema: Schema that created this validator
-    :type schema: easy_schemas.schema.Schema
+    :type schema: schemania.schema.Schema
     :param element_validator: Validator used to check every list element
-    :type element_validator: easy_schemas.validator.Validator
+    :type element_validator: schemania.validator.Validator
 
     """
 
@@ -80,9 +80,9 @@ class DictValidator(Validator):
     """Validator that checks key-value pairs in a dictionary.
 
     :param schema: Schema that created this validator
-    :type schema: easy_schemas.schema.Schema
+    :type schema: schemania.schema.Schema
     :param value_validators: Dictionary of value validators
-    :type value_validators: Dict[str, easy_schemas.validator.Validator]
+    :type value_validators: Dict[str, schemania.validator.Validator]
 
     """
     def __init__(self, schema, value_validators):

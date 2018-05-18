@@ -1,21 +1,21 @@
-============
-Easy Schemas
-============
+=========
+Schemania
+=========
 
 
-.. image:: https://img.shields.io/pypi/v/easy_schemas.svg
-        :target: https://pypi.python.org/pypi/easy_schemas
+.. image:: https://img.shields.io/pypi/v/schemania.svg
+        :target: https://pypi.python.org/pypi/schemania
 
-.. image:: https://img.shields.io/travis/jcollado/easy_schemas.svg
-        :target: https://travis-ci.org/jcollado/easy_schemas
+.. image:: https://img.shields.io/travis/jcollado/schemania.svg
+        :target: https://travis-ci.org/jcollado/schemania
 
-.. image:: https://readthedocs.org/projects/easy-schemas/badge/?version=latest
-        :target: https://easy-schemas.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/schemania/badge/?version=latest
+        :target: https://schemania.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
-.. image:: https://pyup.io/repos/github/jcollado/easy_schemas/shield.svg
-     :target: https://pyup.io/repos/github/jcollado/easy_schemas/
+.. image:: https://pyup.io/repos/github/jcollado/schemania/shield.svg
+     :target: https://pyup.io/repos/github/jcollado/schemania/
      :alt: Updates
 
 
@@ -24,7 +24,7 @@ Validate data with schemas and be in control of error messages.
 
 
 * Free software: MIT license
-* Documentation: https://easy-schemas.readthedocs.io.
+* Documentation: https://schemania.readthedocs.io.
 
 
 Features
