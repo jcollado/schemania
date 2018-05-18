@@ -46,33 +46,60 @@ class TestSchema(object):
         schema(data)
 
     @pytest.mark.parametrize(
-        'raw_schema, data',
+        'raw_schema, data, expected',
         (
-            (str, None),
-            (int, None),
-            ([str], None),
-            ({'a': str}, None),
+            (str, None, "expected 'str', but got None"),
+            (int, None, "expected 'int', but got None"),
+            ([str], None, "expected 'list', but got None"),
+            ({'a': str}, None, "expected 'dict', but got None"),
         ),
     )
-    def test_validation_fails_with_type_error(self, raw_schema, data):
+    def test_validation_fails_with_type_error(
+            self, raw_schema, data, expected):
         """Compile raw schema and validation fails with type error."""
         schema = Schema(raw_schema)
-        with pytest.raises(ValidationTypeError):
+        with pytest.raises(ValidationTypeError) as excinfo:
             schema(data)
+        assert str(excinfo.value) == expected
 
     @pytest.mark.parametrize(
-        'raw_schema, data',
+        'raw_schema, data, expected',
         (
-            ([str], ['a', 1, [], {}]),
-            ([int], ['a', 1, [], {}]),
+            (
+                [str],
+                ['a', 1, [], {}],
+                (
+                    'multiple errors:\n'
+                    "- expected 'str' in '[1]', but got 1\n"
+                    "- expected 'str' in '[2]', but got []\n"
+                    "- expected 'str' in '[3]', but got {}"
+                ),
+            ),
+            (
+                [int],
+                ['a', 1, [], {}],
+                (
+                    'multiple errors:\n'
+                    "- expected 'int' in '[0]', but got 'a'\n"
+                    "- expected 'int' in '[2]', but got []\n"
+                    "- expected 'int' in '[3]', but got {}"
+                ),
+            ),
             (
                 {'a': str, 'b': int},
                 {'a': 1, 'b': 'string'},
+                (
+                    'multiple errors:\n'
+                    "- expected 'str' in 'a', but got 1\n"
+                    "- expected 'int' in 'b', but got 'string'"
+                ),
             ),
         ),
     )
-    def test_validation_fails_with_multiple_error(self, raw_schema, data):
+    def test_validation_fails_with_multiple_error(
+            self, raw_schema, data, expected):
         """Compile raw schema and validation fails with multiple error."""
         schema = Schema(raw_schema)
-        with pytest.raises(ValidationMultipleError):
+        with pytest.raises(ValidationMultipleError) as excinfo:
             schema(data)
+        assert str(excinfo.value) == expected
