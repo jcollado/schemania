@@ -16,6 +16,19 @@ class ValidationError(Exception):
         return formatter(self)
 
 
+class ValidationLiteralError(ValidationError):
+    """Literal error.
+
+    This happens when data is not equal to the expected literal value.
+
+    """
+
+    def __init__(self, validator, data):
+        self.validator = validator
+        self.data = data
+        self.path = deque()
+
+
 class ValidationTypeError(ValidationError):
     """Type error.
 

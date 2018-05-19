@@ -28,10 +28,35 @@ def _format_path(path):
     return path_with_brackets
 
 
+def default_literal_formatter(error):
+    """Format literal value errors.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.ValidationTypeError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        return (
+            'expected {!r}, but got {!r}'
+            .format(error.validator.literal, error.data)
+        )
+
+    return (
+        "expected {!r} in {!r}, but got {!r}"
+        .format(
+            error.validator.literal,
+            _format_path(error.path),
+            error.data,
+        )
+    )
+
+
 def default_type_formatter(error):
     """Format type errors.
 
-    :param error: Error to be formated
+    :param error: Error to be formatted
     :type error: schemania.error.ValidationTypeError
     :returns: Error string representation
     :rtype: str
@@ -56,7 +81,7 @@ def default_type_formatter(error):
 def default_multiple_formatter(error):
     """Format multiple errors.
 
-    :param error: Error to be formated
+    :param error: Error to be formatted
     :type error: schemania.error.MultipleError
     :returns: Error string representation
     :rtype: str

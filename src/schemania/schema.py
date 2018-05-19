@@ -6,23 +6,27 @@ expected structure later.
 
 """
 from schemania.error import (
+    ValidationLiteralError,
     ValidationMultipleError,
     ValidationTypeError,
 )
 from schemania.formatter import (
+    default_literal_formatter,
     default_multiple_formatter,
     default_type_formatter,
 )
 from schemania.validator import (
     DictValidator,
     ListValidator,
+    LiteralValidator,
     TypeValidator,
 )
 
 
 DEFAULT_FORMATTERS = {
-    ValidationTypeError: default_type_formatter,
+    ValidationLiteralError: default_literal_formatter,
     ValidationMultipleError: default_multiple_formatter,
+    ValidationTypeError: default_type_formatter,
 }
 
 
@@ -49,6 +53,9 @@ class Schema(object):
         :rtype: schemania.validator.Validator
 
         """
+        if isinstance(raw_schema, (str, int)):
+            return LiteralValidator(self, raw_schema)
+
         if raw_schema in (str, int):
             return TypeValidator(self, raw_schema)
 

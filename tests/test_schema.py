@@ -3,6 +3,7 @@
 import pytest
 
 from schemania.error import (
+    ValidationLiteralError,
     ValidationMultipleError,
     ValidationTypeError,
 )
@@ -10,6 +11,7 @@ from schemania.schema import Schema
 from schemania.validator import (
     DictValidator,
     ListValidator,
+    LiteralValidator,
     TypeValidator,
 )
 
@@ -20,6 +22,8 @@ class TestSchema(object):
     @pytest.mark.parametrize(
         'raw_schema, expected_cls',
         (
+            ('string', LiteralValidator),
+            (1, LiteralValidator),
             (str, TypeValidator),
             (int, TypeValidator),
             ([str], ListValidator),
@@ -34,6 +38,8 @@ class TestSchema(object):
     @pytest.mark.parametrize(
         'raw_schema, data',
         (
+            ('string', 'string'),
+            (1, 1),
             (str, 'str'),
             (int, 1),
             ([str], ['str']),
@@ -44,6 +50,21 @@ class TestSchema(object):
         """Compile raw schema and validate data that matches."""
         schema = Schema(raw_schema)
         schema(data)
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            ('string', None, "expected 'string', but got None"),
+            (1, None, "expected 1, but got None"),
+        ),
+    )
+    def test_validation_fails_with_literal_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with literal error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationLiteralError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
 
     @pytest.mark.parametrize(
         'raw_schema, data, expected',

@@ -3,17 +3,20 @@
 import pytest
 
 from schemania.error import (
-    ValidationTypeError,
+    ValidationLiteralError,
     ValidationMultipleError,
+    ValidationTypeError,
 )
 from schemania.formatter import (
     _format_path,
-    default_type_formatter,
+    default_literal_formatter,
     default_multiple_formatter,
+    default_type_formatter,
 )
 from schemania.validator import (
-    TypeValidator,
     ListValidator,
+    LiteralValidator,
+    TypeValidator,
 )
 
 
@@ -28,6 +31,35 @@ from schemania.validator import (
 def test_format_attributes(path, expected):
     """Path is formatted as expected."""
     assert _format_path(path) == expected
+
+
+@pytest.mark.parametrize(
+    'literal, data, path, expected',
+    (
+        (
+            'string', 0, [],
+            "expected 'string', but got 0",
+        ),
+        (
+            0, 'string', [],
+            "expected 0, but got 'string'",
+        ),
+        (
+            'string', 0, ['a', 0],
+            "expected 'string' in 'a[0]', but got 0",
+        ),
+        (
+            0, 'string', ['a', 0],
+            "expected 0 in 'a[0]', but got 'string'",
+        ),
+    ),
+)
+def test_default_literal_formatter(literal, data, path, expected):
+    """Default literal formatter returns error string as expected."""
+    literal_validator = LiteralValidator('<schema>', literal)
+    error = ValidationLiteralError(literal_validator, data)
+    error.path = path
+    assert default_literal_formatter(error) == expected
 
 
 @pytest.mark.parametrize(

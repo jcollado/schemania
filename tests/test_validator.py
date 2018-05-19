@@ -2,14 +2,39 @@
 import pytest
 
 from schemania.error import (
+    ValidationLiteralError,
     ValidationMultipleError,
     ValidationTypeError,
 )
 from schemania.validator import (
     DictValidator,
     ListValidator,
+    LiteralValidator,
     TypeValidator,
 )
+
+
+class TestLiteralValidator(object):
+    """LiteralValidator tests."""
+
+    @pytest.mark.parametrize(
+        'literal, data',
+        (
+            ('string', 'string'),
+            (1, 1),
+        ),
+    )
+    def test_validation_passes(self, literal, data):
+        """Validation passes when data is equal to literal value."""
+        validator = LiteralValidator('<schema>', literal)
+        validator.validate(data)
+
+    @pytest.mark.parametrize('literal', ('string', 1))
+    def test_validation_fails(self, literal):
+        """"Validation fails when data isn't equal to literal value."""
+        validator = LiteralValidator('<schema>', literal)
+        with pytest.raises(ValidationLiteralError):
+            validator.validate(None)
 
 
 class TestTypeValidator(object):

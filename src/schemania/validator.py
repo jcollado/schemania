@@ -6,6 +6,7 @@ expected structure.
 """
 from schemania.error import (
     ValidationError,
+    ValidationLiteralError,
     ValidationMultipleError,
     ValidationTypeError,
 )
@@ -15,11 +16,37 @@ class Validator(object):
     """Validator base class."""
 
 
+class LiteralValidator(Validator):
+    """Validator that checks that data is equal to a given literal value.
+
+    :param schema: Schema that created this validator
+    :type schema: schemania.schema.Schema
+    :param literal: Literal value that data should be equal to
+    :type literal: object
+
+    """
+    def __init__(self, schema, literal):
+        self.schema = schema
+        self.literal = literal
+
+    def validate(self, data):
+        """Check if data is equal to literal value.
+
+        :param data: Data to validate
+        :type data: object
+
+        """
+        if not data == self.literal:
+            raise ValidationLiteralError(self, data)
+
+
 class TypeValidator(Validator):
     """Validator that checks data by its type.
 
     :param schema: Schema that created this validator
     :type schema: schemania.schema.Schema
+    :param type_: Type that data should be an instance of
+    :param type_: type
 
     """
     def __init__(self, schema, type_):
