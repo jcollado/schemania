@@ -122,7 +122,7 @@ class DictValidator(Validator):
             raise ValidationTypeError(self, data)
 
         errors = []
-        for key, value in data.items():
+        for key, value in sorted(data.items()):
             try:
                 self.value_validators[key].validate(value)
             except ValidationError as error:
