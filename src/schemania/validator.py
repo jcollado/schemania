@@ -7,6 +7,7 @@ expected structure.
 from schemania.error import (
     ValidationError,
     ValidationLiteralError,
+    ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
 )
@@ -118,6 +119,12 @@ class DictValidator(Validator):
         self.value_validators = value_validators
 
     def validate(self, data):
+        """Check if values in dictionary validate using their own validators.
+
+        :param data: Data to validate
+        :type data: object
+
+        """
         if not isinstance(data, dict):
             raise ValidationTypeError(self, data)
 
@@ -133,3 +140,32 @@ class DictValidator(Validator):
             if len(errors) == 1:
                 raise errors[0]
             raise ValidationMultipleError(self, errors, data)
+
+
+class RegexValidator(Validator):
+    """Validator that checks if data matches a regular expression.
+
+    :param schema: Schema that created this validator
+    :type schema: schemania.schema.Schema
+    :param regex: Regular expression to match against data
+    :type regex: re.RegexObject
+
+    """
+
+    def __init__(self, schema, regex):
+        self.schema = schema
+        self.type = str
+        self.regex = regex
+
+    def validate(self, data):
+        """Check if data matches regular expression.
+
+        :param data: Data to validate
+        :type data: object
+
+        """
+        if not isinstance(data, self.type):
+            raise ValidationTypeError(self, data)
+
+        if self.regex.match(data) is None:
+            raise ValidationMatchError(self, data)

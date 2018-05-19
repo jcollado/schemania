@@ -44,7 +44,7 @@ def default_literal_formatter(error):
         )
 
     return (
-        "expected {!r} in {!r}, but got {!r}"
+        'expected {!r} in {!r}, but got {!r}'
         .format(
             error.validator.literal,
             _format_path(error.path),
@@ -69,7 +69,7 @@ def default_type_formatter(error):
         )
 
     return (
-        "expected {!r} in {!r}, but got {!r}"
+        'expected {!r} in {!r}, but got {!r}'
         .format(
             error.validator.type.__name__,
             _format_path(error.path),
@@ -100,4 +100,29 @@ def default_multiple_formatter(error):
             _format_path(error.path),
             error_messages,
         )
+    )
+
+
+def default_match_formatter(error):
+    """Format match error.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.MultipleError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        return (
+            'expected to match against regex {!r}, but got {!r}'
+            .format(error.validator.regex.pattern, error.data)
+        )
+
+    return (
+            'expected to match against regex {!r} in {!r}, but got {!r}'
+            .format(
+                error.validator.regex.pattern,
+                _format_path(error.path),
+                error.data,
+            )
     )

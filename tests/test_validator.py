@@ -1,8 +1,11 @@
 """Schema validator tests."""
+import re
+
 import pytest
 
 from schemania.error import (
     ValidationLiteralError,
+    ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
 )
@@ -10,6 +13,7 @@ from schemania.validator import (
     DictValidator,
     ListValidator,
     LiteralValidator,
+    RegexValidator,
     TypeValidator,
 )
 
@@ -192,3 +196,45 @@ class TestDictValidator(object):
         dict_validator = DictValidator('<schema>', value_validators)
         with pytest.raises(ValidationMultipleError):
             dict_validator.validate(data)
+
+
+class TestRegexValidator(object):
+    """RegexValidator tests."""
+
+    @pytest.mark.parametrize(
+        'regex, data',
+        (
+            (re.compile(r'^\d+$'), '1234567890'),
+            (re.compile(r'^[a-z]+$'), 'string'),
+        ),
+    )
+    def test_validation_passes(self, regex, data):
+        """Validation passes when data matches against regular expression."""
+        regex_validator = RegexValidator('<schema>', regex)
+        regex_validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'regex, data',
+        (
+            (re.compile(r'^\d+$'), 0),
+            (re.compile(r'^[a-z]+$'), None),
+        ),
+    )
+    def test_validation_fails_with_type_error(self, regex, data):
+        """Validation fails with match error."""
+        regex_validator = RegexValidator('<schema>', regex)
+        with pytest.raises(ValidationTypeError):
+            regex_validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'regex, data',
+        (
+            (re.compile(r'^\d+$'), 'string'),
+            (re.compile(r'^[a-z]+$'), '123456790'),
+        ),
+    )
+    def test_validation_fails_with_match_error(self, regex, data):
+        """Validation fails with match error."""
+        regex_validator = RegexValidator('<schema>', regex)
+        with pytest.raises(ValidationMatchError):
+            regex_validator.validate(data)

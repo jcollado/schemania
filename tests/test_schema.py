@@ -1,9 +1,12 @@
 """Schema tests."""
 
+import re
+
 import pytest
 
 from schemania.error import (
     ValidationLiteralError,
+    ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
 )
@@ -12,6 +15,7 @@ from schemania.validator import (
     DictValidator,
     ListValidator,
     LiteralValidator,
+    RegexValidator,
     TypeValidator,
 )
 
@@ -28,6 +32,7 @@ class TestSchema(object):
             (int, TypeValidator),
             ([str], ListValidator),
             ({'a': str}, DictValidator),
+            (re.compile(r'^\d+$'), RegexValidator),
         ),
     )
     def test_compile(self, raw_schema, expected_cls):
@@ -44,6 +49,7 @@ class TestSchema(object):
             (int, 1),
             ([str], ['str']),
             ({'a': str}, {'a': 'str'}),
+            (re.compile(r'^\d+$'), '1234567890'),
         ),
     )
     def test_validation_passes(self, raw_schema, data):
@@ -73,6 +79,7 @@ class TestSchema(object):
             (int, None, "expected 'int', but got None"),
             ([str], None, "expected 'list', but got None"),
             ({'a': str}, None, "expected 'dict', but got None"),
+            (re.compile(r'^\d+$'), None, "expected 'str', but got None"),
         ),
     )
     def test_validation_fails_with_type_error(
@@ -122,5 +129,29 @@ class TestSchema(object):
         """Compile raw schema and validation fails with multiple error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationMultipleError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            (
+                re.compile(r'^\d+$'), 'string',
+                "expected to match against regex '^\\\\d+$', but got 'string'",
+            ),
+            (
+                re.compile(r'^[a-z]+$'), '1234567890',
+                (
+                    "expected to match against regex '^[a-z]+$', "
+                    "but got '1234567890'"
+                ),
+            ),
+        ),
+    )
+    def test_validation_fails_with_match_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with literal error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationMatchError) as excinfo:
             schema(data)
         assert str(excinfo.value) == expected

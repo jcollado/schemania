@@ -1,21 +1,26 @@
 """Formatters tests."""
 
+import re
+
 import pytest
 
 from schemania.error import (
     ValidationLiteralError,
+    ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
 )
 from schemania.formatter import (
     _format_path,
     default_literal_formatter,
+    default_match_formatter,
     default_multiple_formatter,
     default_type_formatter,
 )
 from schemania.validator import (
     ListValidator,
     LiteralValidator,
+    RegexValidator,
     TypeValidator,
 )
 
@@ -110,3 +115,38 @@ def test_default_multiple_formatter(errors, path, expected):
     error = ValidationMultipleError(list_validator, errors, '<data>')
     error.path = path
     assert default_multiple_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'regex, data, path, expected',
+    (
+        (
+            re.compile(r'^\d+$'), 'string', [],
+            "expected to match against regex '^\\\\d+$', but got 'string'",
+        ),
+        (
+            re.compile(r'^[a-z]+$'), '1234567890', [],
+            "expected to match against regex '^[a-z]+$', but got '1234567890'",
+        ),
+        (
+            re.compile(r'^\d+$'), 'string', ['a', 0],
+            (
+                "expected to match against regex '^\\\\d+$' in 'a[0]', "
+                "but got 'string'"
+            ),
+        ),
+        (
+            re.compile(r'^[a-z]+$'), '1234567890', ['a', 0],
+            (
+                "expected to match against regex '^[a-z]+$' in 'a[0]', "
+                "but got '1234567890'"
+            ),
+        ),
+    ),
+)
+def test_default_match_formatter(regex, data, path, expected):
+    """Default match formatter returns error string as expected."""
+    regex_validator = RegexValidator('<schema>', regex)
+    error = ValidationMatchError(regex_validator, data)
+    error.path = path
+    assert default_match_formatter(error) == expected

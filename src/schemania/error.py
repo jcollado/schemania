@@ -67,3 +67,20 @@ class ValidationMultipleError(ValidationError):
         self.errors = errors
         self.data = data
         self.path = deque()
+
+
+class ValidationMatchError(ValidationError):
+    """Match error.
+
+    This happens when a regular expression doesn't match with data.
+
+    :param validator: Validator that found the type error
+    :type validator: schemania.validator.Validator
+    :param data: Data that failed to validate
+    :type data: object
+
+    """
+    def __init__(self, validator, data):
+        self.validator = validator
+        self.data = data
+        self.path = deque()

@@ -5,13 +5,18 @@ are compiled into validators that are used to check if some data matches the
 expected structure later.
 
 """
+
+import re
+
 from schemania.error import (
     ValidationLiteralError,
+    ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
 )
 from schemania.formatter import (
     default_literal_formatter,
+    default_match_formatter,
     default_multiple_formatter,
     default_type_formatter,
 )
@@ -19,15 +24,20 @@ from schemania.validator import (
     DictValidator,
     ListValidator,
     LiteralValidator,
+    RegexValidator,
     TypeValidator,
 )
 
 
 DEFAULT_FORMATTERS = {
     ValidationLiteralError: default_literal_formatter,
+    ValidationMatchError: default_match_formatter,
     ValidationMultipleError: default_multiple_formatter,
     ValidationTypeError: default_type_formatter,
 }
+
+# Get _sre.SRE_Pattern to use it below with isinstance function
+RegexObject = type(re.compile(''))
 
 
 class Schema(object):
@@ -70,6 +80,9 @@ class Schema(object):
                 for key, value in raw_schema.items()
             }
             return DictValidator(self, values_validator)
+
+        if isinstance(raw_schema, RegexObject):
+            return RegexValidator(self, raw_schema)
 
         raise ValueError('Unexpected raw schema: {}'.format(raw_schema))
 
