@@ -7,6 +7,7 @@ import pytest
 from schemania.error import (
     ValidationLiteralError,
     ValidationMatchError,
+    ValidationMissingKeyError,
     ValidationMultipleError,
     ValidationTypeError,
     ValidationUnknownKeyError,
@@ -49,7 +50,9 @@ class TestSchema(object):
             (str, 'str'),
             (int, 1),
             ([str], ['str']),
-            ({'a': str}, {'a': 'str'}),
+            ({'a': str}, {'a': 'string'}),
+            ({str: str}, {'a': 'string', 'b': 'string'}),
+            ({int: str}, {0: 'string', 1: 'string'}),
             (re.compile(r'^\d+$'), '1234567890'),
             ({re.compile(r'^\w\d'): int}, {'a1': 0, 'b2': 0}),
         ),
@@ -107,6 +110,23 @@ class TestSchema(object):
         """Compile raw schema and validation fails with type error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationUnknownKeyError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            ({'a': str}, {}, "missing key 'a'"),
+            ({re.compile(r'\w+'): str}, {}, "missing key '\\\\w+'"),
+            ({str: str}, {}, "missing key 'str'"),
+            ({int: str}, {}, "missing key 'int'"),
+        ),
+    )
+    def test_validation_fails_missing_key_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with type error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationMissingKeyError) as excinfo:
             schema(data)
         assert str(excinfo.value) == expected
 

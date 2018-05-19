@@ -6,6 +6,7 @@ import pytest
 from schemania.error import (
     ValidationLiteralError,
     ValidationMatchError,
+    ValidationMissingKeyError,
     ValidationMultipleError,
     ValidationTypeError,
     ValidationUnknownKeyError,
@@ -209,6 +210,13 @@ class TestDictValidator(object):
                     'd': None,
                 },
             ),
+            (
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                },
+                {'b': None},
+            ),
         ),
     )
     def test_validation_fails_with_multiple_error(
@@ -235,9 +243,28 @@ class TestDictValidator(object):
     )
     def test_validation_fails_with_unknown_key_error(
             self, validators, data):
-        """Validation fails with multiple error."""
+        """Validation fails with unknown key error."""
         dict_validator = DictValidator('<schema>', validators)
         with pytest.raises(ValidationUnknownKeyError):
+            dict_validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                },
+                {},
+            ),
+        ),
+    )
+    def test_validation_fails_with_missing_key_error(
+            self, validators, data):
+        """Validation fails with mmissing key error."""
+        dict_validator = DictValidator('<schema>', validators)
+        with pytest.raises(ValidationMissingKeyError):
             dict_validator.validate(data)
 
 

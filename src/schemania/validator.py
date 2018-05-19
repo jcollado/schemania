@@ -8,6 +8,7 @@ from schemania.error import (
     ValidationError,
     ValidationLiteralError,
     ValidationMatchError,
+    ValidationMissingKeyError,
     ValidationMultipleError,
     ValidationTypeError,
     ValidationUnknownKeyError,
@@ -30,6 +31,15 @@ class LiteralValidator(Validator):
     def __init__(self, schema, literal):
         self.schema = schema
         self.literal = literal
+
+    def __repr__(self):
+        """Return string validatior stirng representation.
+
+        This is useful for some formatters that need to get access to the
+        original value passed in the raw schema.
+
+        """
+        return repr(self.literal)
 
     def validate(self, data):
         """Check if data is equal to literal value.
@@ -54,6 +64,15 @@ class TypeValidator(Validator):
     def __init__(self, schema, type_):
         self.schema = schema
         self.type = type_
+
+    def __repr__(self):
+        """Return string validatior stirng representation.
+
+        This is useful for some formatters that need to get access to the
+        original value passed in the raw schema.
+
+        """
+        return repr(self.type.__name__)
 
     def validate(self, data):
         """Check if data is of the expected type.
@@ -131,6 +150,7 @@ class DictValidator(Validator):
             raise ValidationTypeError(self, data)
 
         errors = []
+        key_validators_not_matched = set(self.validators.keys())
         for key, value in sorted(data.items()):
             for key_validator, value_validator in self.validators.items():
                 try:
@@ -140,14 +160,23 @@ class DictValidator(Validator):
                 except ValidationError:
                     continue
                 else:
-                    try:
-                        value_validator.validate(value)
-                    except ValidationError as error:
-                        error.path.appendleft(key)
-                        errors.append(error)
-                    break
+                    if key_validator in key_validators_not_matched:
+                        key_validators_not_matched.remove(key_validator)
+
+                try:
+                    value_validator.validate(value)
+                except ValidationError as error:
+                    error.path.appendleft(key)
+                    errors.append(error)
+                break
             else:
                 errors.append(ValidationUnknownKeyError(self, key))
+
+        if key_validators_not_matched:
+            errors.extend([
+                ValidationMissingKeyError(self, key_validator)
+                for key_validator in key_validators_not_matched
+            ])
 
         if errors:
             if len(errors) == 1:
@@ -169,6 +198,15 @@ class RegexValidator(Validator):
         self.schema = schema
         self.type = str
         self.regex = regex
+
+    def __repr__(self):
+        """Return string validatior stirng representation.
+
+        This is useful for some formatters that need to get access to the
+        original value passed in the raw schema.
+
+        """
+        return repr(self.regex.pattern)
 
     def validate(self, data):
         """Check if data matches regular expression.

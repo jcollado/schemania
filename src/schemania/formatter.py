@@ -96,6 +96,24 @@ def default_unknown_key_formatter(error):
     )
 
 
+def default_missing_key_formatter(error):
+    """Format missing key errors.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.ValidationMissingKeyError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        return 'missing key {!r}'.format(error.key_validator)
+
+    return (
+        'missing key {!r} in {!r}'
+        .format(error.key_validator, _format_path(error.path))
+    )
+
+
 def default_multiple_formatter(error):
     """Format multiple errors.
 

@@ -7,6 +7,7 @@ import pytest
 from schemania.error import (
     ValidationLiteralError,
     ValidationMatchError,
+    ValidationMissingKeyError,
     ValidationMultipleError,
     ValidationTypeError,
     ValidationUnknownKeyError,
@@ -15,6 +16,7 @@ from schemania.formatter import (
     _format_path,
     default_literal_formatter,
     default_match_formatter,
+    default_missing_key_formatter,
     default_multiple_formatter,
     default_type_formatter,
     default_unknown_key_formatter,
@@ -108,11 +110,26 @@ def test_default_type_formatter(type_, data, path, expected):
     ),
 )
 def test_default_unknown_key_formatter(key, path, expected):
-    """Default type formatter returns error string as expected."""
+    """Default unknown key formatter returns error string as expected."""
     dict_validator = DictValidator('<schema>', '<validators>')
     error = ValidationUnknownKeyError(dict_validator, key)
     error.path = path
     assert default_unknown_key_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'key, path, expected',
+    (
+        ('a', [], "missing key 'a'"),
+        ('a', ['a', 0], "missing key 'a' in 'a[0]'"),
+    ),
+)
+def test_default_missing_key_formatter(key, path, expected):
+    """Default missing key formatter returns error string as expected."""
+    dict_validator = DictValidator('<schema>', '<validators>')
+    error = ValidationMissingKeyError(dict_validator, key)
+    error.path = path
+    assert default_missing_key_formatter(error) == expected
 
 
 @pytest.mark.parametrize(

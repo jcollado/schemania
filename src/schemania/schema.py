@@ -11,6 +11,7 @@ import re
 from schemania.error import (
     ValidationLiteralError,
     ValidationMatchError,
+    ValidationMissingKeyError,
     ValidationMultipleError,
     ValidationTypeError,
     ValidationUnknownKeyError,
@@ -18,6 +19,7 @@ from schemania.error import (
 from schemania.formatter import (
     default_literal_formatter,
     default_match_formatter,
+    default_missing_key_formatter,
     default_multiple_formatter,
     default_type_formatter,
     default_unknown_key_formatter,
@@ -34,6 +36,7 @@ from schemania.validator import (
 DEFAULT_FORMATTERS = {
     ValidationLiteralError: default_literal_formatter,
     ValidationMatchError: default_match_formatter,
+    ValidationMissingKeyError: default_missing_key_formatter,
     ValidationMultipleError: default_multiple_formatter,
     ValidationTypeError: default_type_formatter,
     ValidationUnknownKeyError: default_unknown_key_formatter,
