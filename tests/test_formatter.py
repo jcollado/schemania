@@ -9,6 +9,7 @@ from schemania.error import (
     ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
+    ValidationUnknownKeyError,
 )
 from schemania.formatter import (
     _format_path,
@@ -16,8 +17,10 @@ from schemania.formatter import (
     default_match_formatter,
     default_multiple_formatter,
     default_type_formatter,
+    default_unknown_key_formatter,
 )
 from schemania.validator import (
+    DictValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -31,9 +34,10 @@ from schemania.validator import (
         (['a', 'b', 'c'], 'a.b.c'),
         ([0, 1, 2], '[0][1][2]'),
         (['a', 0, 'b', 1], 'a[0].b[1]'),
+        (['a1', 'b2'], 'a1.b2'),
     ),
 )
-def test_format_attributes(path, expected):
+def test_format_path(path, expected):
     """Path is formatted as expected."""
     assert _format_path(path) == expected
 
@@ -94,6 +98,21 @@ def test_default_type_formatter(type_, data, path, expected):
     error = ValidationTypeError(type_validator, data)
     error.path = path
     assert default_type_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'key, path, expected',
+    (
+        ('a', [], "unknown key 'a'"),
+        ('a', ['a', 0], "unknown key 'a' in 'a[0]'"),
+    ),
+)
+def test_default_unknown_key_formatter(key, path, expected):
+    """Default type formatter returns error string as expected."""
+    dict_validator = DictValidator('<schema>', '<validators>')
+    error = ValidationUnknownKeyError(dict_validator, key)
+    error.path = path
+    assert default_unknown_key_formatter(error) == expected
 
 
 @pytest.mark.parametrize(

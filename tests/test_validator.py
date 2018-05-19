@@ -8,6 +8,7 @@ from schemania.error import (
     ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
+    ValidationUnknownKeyError,
 )
 from schemania.validator import (
     DictValidator,
@@ -121,14 +122,18 @@ class TestDictValidator(object):
     """DictValidator tests."""
 
     @pytest.mark.parametrize(
-        'value_validators, data',
+        'validators, data',
         (
             (
                 {
-                    'a': TypeValidator('<schema>', str),
-                    'b': TypeValidator('<schema>', int),
-                    'c': TypeValidator('<schema>', list),
-                    'd': TypeValidator('<schema>', dict),
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                    LiteralValidator('<schema>', 'b'):
+                        TypeValidator('<schema>', int),
+                    LiteralValidator('<schema>', 'c'):
+                        TypeValidator('<schema>', list),
+                    LiteralValidator('<schema>', 'd'):
+                        TypeValidator('<schema>', dict),
                 },
                 {
                     'a': 'string',
@@ -139,47 +144,63 @@ class TestDictValidator(object):
             ),
         ),
     )
-    def test_validation_passes(self, value_validators, data):
+    def test_validation_passes(self, validators, data):
         """Validation passes when data matches expected type."""
-        dict_validator = DictValidator('<schema>', value_validators)
+        dict_validator = DictValidator('<schema>', validators)
         dict_validator.validate(data)
 
     @pytest.mark.parametrize(
-        'value_validators, data',
+        'validators, data',
         (
             (
-                {'a': TypeValidator('<schema>', str)},
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                },
                 {'a': None},
             ),
             (
-                {'a': TypeValidator('<schema>', int)},
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', int),
+                },
                 {'a': None},
             ),
             (
-                {'a': TypeValidator('<schema>', list)},
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', list),
+                },
                 {'a': None},
             ),
             (
-                {'a': TypeValidator('<schema>', dict)},
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', dict),
+                },
                 {'a': None},
             ),
         ),
     )
-    def test_validation_fails_with_type_error(self, value_validators, data):
+    def test_validation_fails_with_type_error(self, validators, data):
         """Validation fails with type error."""
-        dict_validator = DictValidator('<schema>', value_validators)
+        dict_validator = DictValidator('<schema>', validators)
         with pytest.raises(ValidationTypeError):
             dict_validator.validate(data)
 
     @pytest.mark.parametrize(
-        'value_validators, data',
+        'validators, data',
         (
             (
                 {
-                    'a': TypeValidator('<schema>', str),
-                    'b': TypeValidator('<schema>', int),
-                    'c': TypeValidator('<schema>', list),
-                    'd': TypeValidator('<schema>', dict),
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                    LiteralValidator('<schema>', 'b'):
+                        TypeValidator('<schema>', int),
+                    LiteralValidator('<schema>', 'c'):
+                        TypeValidator('<schema>', list),
+                    LiteralValidator('<schema>', 'd'):
+                        TypeValidator('<schema>', dict),
                 },
                 {
                     'a': None,
@@ -191,10 +212,32 @@ class TestDictValidator(object):
         ),
     )
     def test_validation_fails_with_multiple_error(
-            self, value_validators, data):
+            self, validators, data):
         """Validation fails with multiple error."""
-        dict_validator = DictValidator('<schema>', value_validators)
+        dict_validator = DictValidator('<schema>', validators)
         with pytest.raises(ValidationMultipleError):
+            dict_validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                {
+                    LiteralValidator('<schema>', 'a'):
+                        TypeValidator('<schema>', str),
+                },
+                {
+                    'a': 'string',
+                    'b': None,
+                },
+            ),
+        ),
+    )
+    def test_validation_fails_with_unknown_key_error(
+            self, validators, data):
+        """Validation fails with multiple error."""
+        dict_validator = DictValidator('<schema>', validators)
+        with pytest.raises(ValidationUnknownKeyError):
             dict_validator.validate(data)
 
 

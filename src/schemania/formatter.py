@@ -21,8 +21,8 @@ def _format_path(path):
     """
     path_with_dots = '.'.join(str(fragment) for fragment in path)
     path_with_brackets = re.sub(
-        r'\.?(\d+)',
-        r'[\1]',
+        r'(^|\.)(\d+)',
+        r'[\2]',
         path_with_dots
     )
     return path_with_brackets
@@ -75,6 +75,24 @@ def default_type_formatter(error):
             _format_path(error.path),
             error.data,
         )
+    )
+
+
+def default_unknown_key_formatter(error):
+    """Format unknown key errors.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.ValidationUnknownKeyError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        return 'unknown key {!r}'.format(error.key)
+
+    return (
+        'unknown key {!r} in {!r}'
+        .format(error.key, _format_path(error.path))
     )
 
 

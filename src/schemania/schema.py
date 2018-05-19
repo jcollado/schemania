@@ -13,12 +13,14 @@ from schemania.error import (
     ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
+    ValidationUnknownKeyError,
 )
 from schemania.formatter import (
     default_literal_formatter,
     default_match_formatter,
     default_multiple_formatter,
     default_type_formatter,
+    default_unknown_key_formatter,
 )
 from schemania.validator import (
     DictValidator,
@@ -34,6 +36,7 @@ DEFAULT_FORMATTERS = {
     ValidationMatchError: default_match_formatter,
     ValidationMultipleError: default_multiple_formatter,
     ValidationTypeError: default_type_formatter,
+    ValidationUnknownKeyError: default_unknown_key_formatter,
 }
 
 # Get _sre.SRE_Pattern to use it below with isinstance function
@@ -76,7 +79,7 @@ class Schema(object):
 
         if isinstance(raw_schema, dict):
             values_validator = {
-                key: self._compile(value)
+                self._compile(key): self._compile(value)
                 for key, value in raw_schema.items()
             }
             return DictValidator(self, values_validator)

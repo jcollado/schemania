@@ -9,6 +9,7 @@ from schemania.error import (
     ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
+    ValidationUnknownKeyError,
 )
 from schemania.schema import Schema
 from schemania.validator import (
@@ -50,6 +51,7 @@ class TestSchema(object):
             ([str], ['str']),
             ({'a': str}, {'a': 'str'}),
             (re.compile(r'^\d+$'), '1234567890'),
+            ({re.compile(r'^\w\d'): int}, {'a1': 0, 'b2': 0}),
         ),
     )
     def test_validation_passes(self, raw_schema, data):
@@ -94,6 +96,24 @@ class TestSchema(object):
         'raw_schema, data, expected',
         (
             (
+                {'a': str},
+                {'a': 'string', 'b': 0},
+                "unknown key 'b'",
+            ),
+        ),
+    )
+    def test_validation_fails_unknown_key_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with type error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationUnknownKeyError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            (
                 [str],
                 ['a', 1, [], {}],
                 (
@@ -115,11 +135,12 @@ class TestSchema(object):
             ),
             (
                 {'a': str, 'b': int},
-                {'a': 1, 'b': 'string'},
+                {'a': 1, 'b': 'string', 'c': None},
                 (
                     'multiple errors:\n'
                     "- expected 'str' in 'a', but got 1\n"
-                    "- expected 'int' in 'b', but got 'string'"
+                    "- expected 'int' in 'b', but got 'string'\n"
+                    "- unknown key 'c'"
                 ),
             ),
         ),

@@ -47,6 +47,24 @@ class ValidationTypeError(ValidationError):
         self.path = deque()
 
 
+class ValidationUnknownKeyError(ValidationError):
+    """Unknown key error.
+
+    This happens when key in a dictionary doesn't match against any validator.
+
+    :param validator: Validator that found the type error
+    :type validator: schemania.validator.Validator
+    :param data: Data that failed to validate
+    :type data: object
+
+    """
+
+    def __init__(self, validator, key):
+        self.validator = validator
+        self.key = key
+        self.path = deque()
+
+
 class ValidationMultipleError(ValidationError):
     """Multiple error.
 

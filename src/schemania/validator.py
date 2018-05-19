@@ -10,6 +10,7 @@ from schemania.error import (
     ValidationMatchError,
     ValidationMultipleError,
     ValidationTypeError,
+    ValidationUnknownKeyError,
 )
 
 
@@ -109,14 +110,15 @@ class DictValidator(Validator):
 
     :param schema: Schema that created this validator
     :type schema: schemania.schema.Schema
-    :param value_validators: Dictionary of value validators
-    :type value_validators: Dict[str, schemania.validator.Validator]
+    :param validators: Dictionary of key-value validators
+    :type validators:
+        Dict[schemania.validator.Validator, schemania.validator.Validator]
 
     """
-    def __init__(self, schema, value_validators):
+    def __init__(self, schema, validators):
         self.schema = schema
         self.type = dict
-        self.value_validators = value_validators
+        self.validators = validators
 
     def validate(self, data):
         """Check if values in dictionary validate using their own validators.
@@ -130,11 +132,22 @@ class DictValidator(Validator):
 
         errors = []
         for key, value in sorted(data.items()):
-            try:
-                self.value_validators[key].validate(value)
-            except ValidationError as error:
-                error.path.appendleft(key)
-                errors.append(error)
+            for key_validator, value_validator in self.validators.items():
+                try:
+                    # TODO: handle situation in which key validates
+                    # against multiple validators, but value doesn't
+                    key_validator.validate(key)
+                except ValidationError:
+                    continue
+                else:
+                    try:
+                        value_validator.validate(value)
+                    except ValidationError as error:
+                        error.path.appendleft(key)
+                        errors.append(error)
+                    break
+            else:
+                errors.append(ValidationUnknownKeyError(self, key))
 
         if errors:
             if len(errors) == 1:
