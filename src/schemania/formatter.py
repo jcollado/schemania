@@ -7,8 +7,6 @@ the default behavior.
 
 """
 
-import re
-
 
 def _format_path(path):
     """Format path to data for which an error was found.
@@ -19,13 +17,10 @@ def _format_path(path):
     :rtype: str
 
     """
-    path_with_dots = '.'.join(str(fragment) for fragment in path)
-    path_with_brackets = re.sub(
-        r'(^|\.)(\d+)',
-        r'[\2]',
-        path_with_dots
+    path_with_brackets = (
+        ''.join('[{!r}]'.format(fragment) for fragment in path)
     )
-    return path_with_brackets
+    return '{}'.format(path_with_brackets)
 
 
 def default_literal_formatter(error):
@@ -44,7 +39,7 @@ def default_literal_formatter(error):
         )
 
     return (
-        'expected {!r} in {!r}, but got {!r}'
+        'expected {!r} in {}, but got {!r}'
         .format(
             error.validator.literal,
             _format_path(error.path),
@@ -69,7 +64,7 @@ def default_type_formatter(error):
         )
 
     return (
-        'expected {!r} in {!r}, but got {!r}'
+        'expected {!r} in {}, but got {!r}'
         .format(
             error.validator.type.__name__,
             _format_path(error.path),
@@ -91,7 +86,7 @@ def default_unknown_key_formatter(error):
         return 'unknown key {!r}'.format(error.key)
 
     return (
-        'unknown key {!r} in {!r}'
+        'unknown key {!r} in {}'
         .format(error.key, _format_path(error.path))
     )
 
@@ -106,10 +101,10 @@ def default_missing_key_formatter(error):
 
     """
     if len(error.path) == 0:
-        return 'missing key {!r}'.format(error.key_validator)
+        return 'missing key {}'.format(error.key_validator)
 
     return (
-        'missing key {!r} in {!r}'
+        'missing key {} in {}'
         .format(error.key_validator, _format_path(error.path))
     )
 
@@ -131,7 +126,7 @@ def default_multiple_formatter(error):
         return 'multiple errors:\n{}'.format(error_messages)
 
     return (
-        'multiple errors in {!r}:\n{}'
+        'multiple errors in {}:\n{}'
         .format(
             _format_path(error.path),
             error_messages,
@@ -155,7 +150,7 @@ def default_match_formatter(error):
         )
 
     return (
-            'expected to match against regex {!r} in {!r}, but got {!r}'
+            'expected to match against regex {!r} in {}, but got {!r}'
             .format(
                 error.validator.regex.pattern,
                 _format_path(error.path),

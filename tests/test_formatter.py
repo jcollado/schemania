@@ -33,10 +33,10 @@ from schemania.validator import (
 @pytest.mark.parametrize(
     'path, expected',
     (
-        (['a', 'b', 'c'], 'a.b.c'),
+        (['a', 'b', 'c'], "['a']['b']['c']"),
         ([0, 1, 2], '[0][1][2]'),
-        (['a', 0, 'b', 1], 'a[0].b[1]'),
-        (['a1', 'b2'], 'a1.b2'),
+        (['a', 0, 'b', 1], "['a'][0]['b'][1]"),
+        (['a1', 'b2'], "['a1']['b2']"),
     ),
 )
 def test_format_path(path, expected):
@@ -57,11 +57,11 @@ def test_format_path(path, expected):
         ),
         (
             'string', 0, ['a', 0],
-            "expected 'string' in 'a[0]', but got 0",
+            "expected 'string' in ['a'][0], but got 0",
         ),
         (
             0, 'string', ['a', 0],
-            "expected 0 in 'a[0]', but got 'string'",
+            "expected 0 in ['a'][0], but got 'string'",
         ),
     ),
 )
@@ -86,11 +86,11 @@ def test_default_literal_formatter(literal, data, path, expected):
         ),
         (
             str, 0, ['a', 0],
-            "expected 'str' in 'a[0]', but got 0",
+            "expected 'str' in ['a'][0], but got 0",
         ),
         (
             int, 'string', ['a', 0],
-            "expected 'int' in 'a[0]', but got 'string'",
+            "expected 'int' in ['a'][0], but got 'string'",
         ),
     ),
 )
@@ -106,7 +106,7 @@ def test_default_type_formatter(type_, data, path, expected):
     'key, path, expected',
     (
         ('a', [], "unknown key 'a'"),
-        ('a', ['a', 0], "unknown key 'a' in 'a[0]'"),
+        ('a', ['a', 0], "unknown key 'a' in ['a'][0]"),
     ),
 )
 def test_default_unknown_key_formatter(key, path, expected):
@@ -121,13 +121,14 @@ def test_default_unknown_key_formatter(key, path, expected):
     'key, path, expected',
     (
         ('a', [], "missing key 'a'"),
-        ('a', ['a', 0], "missing key 'a' in 'a[0]'"),
+        ('a', ['a', 0], "missing key 'a' in ['a'][0]"),
     ),
 )
 def test_default_missing_key_formatter(key, path, expected):
     """Default missing key formatter returns error string as expected."""
     dict_validator = DictValidator('<schema>', '<validators>')
-    error = ValidationMissingKeyError(dict_validator, key)
+    key_validator = LiteralValidator('<schema>', key)
+    error = ValidationMissingKeyError(dict_validator, key_validator)
     error.path = path
     assert default_missing_key_formatter(error) == expected
 
@@ -141,7 +142,7 @@ def test_default_missing_key_formatter(key, path, expected):
         ),
         (
             ('error#1', 'error#2'), ['a', 0],
-            "multiple errors in 'a[0]':\n- error#1\n- error#2"
+            "multiple errors in ['a'][0]:\n- error#1\n- error#2"
         ),
     ),
 )
@@ -167,14 +168,14 @@ def test_default_multiple_formatter(errors, path, expected):
         (
             re.compile(r'^\d+$'), 'string', ['a', 0],
             (
-                "expected to match against regex '^\\\\d+$' in 'a[0]', "
+                "expected to match against regex '^\\\\d+$' in ['a'][0], "
                 "but got 'string'"
             ),
         ),
         (
             re.compile(r'^[a-z]+$'), '1234567890', ['a', 0],
             (
-                "expected to match against regex '^[a-z]+$' in 'a[0]', "
+                "expected to match against regex '^[a-z]+$' in ['a'][0], "
                 "but got '1234567890'"
             ),
         ),

@@ -32,8 +32,8 @@ class LiteralValidator(Validator):
         self.schema = schema
         self.literal = literal
 
-    def __repr__(self):
-        """Return string validatior stirng representation.
+    def __str__(self):
+        """Return validator string representation.
 
         This is useful for some formatters that need to get access to the
         original value passed in the raw schema.
@@ -65,8 +65,8 @@ class TypeValidator(Validator):
         self.schema = schema
         self.type = type_
 
-    def __repr__(self):
-        """Return string validatior stirng representation.
+    def __str__(self):
+        """Return validator string representation.
 
         This is useful for some formatters that need to get access to the
         original value passed in the raw schema.
@@ -199,8 +199,8 @@ class RegexValidator(Validator):
         self.type = str
         self.regex = regex
 
-    def __repr__(self):
-        """Return string validatior stirng representation.
+    def __str__(self):
+        """Return validator string representation.
 
         This is useful for some formatters that need to get access to the
         original value passed in the raw schema.

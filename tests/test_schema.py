@@ -105,9 +105,9 @@ class TestSchema(object):
             ),
         ),
     )
-    def test_validation_fails_unknown_key_error(
+    def test_validation_fails_with_unknown_key_error(
             self, raw_schema, data, expected):
-        """Compile raw schema and validation fails with type error."""
+        """Compile raw schema and validation fails with unknown key error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationUnknownKeyError) as excinfo:
             schema(data)
@@ -122,9 +122,9 @@ class TestSchema(object):
             ({int: str}, {}, "missing key 'int'"),
         ),
     )
-    def test_validation_fails_missing_key_error(
+    def test_validation_fails_with_missing_key_error(
             self, raw_schema, data, expected):
-        """Compile raw schema and validation fails with type error."""
+        """Compile raw schema and validation fails with missing key error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationMissingKeyError) as excinfo:
             schema(data)
@@ -138,9 +138,9 @@ class TestSchema(object):
                 ['a', 1, [], {}],
                 (
                     'multiple errors:\n'
-                    "- expected 'str' in '[1]', but got 1\n"
-                    "- expected 'str' in '[2]', but got []\n"
-                    "- expected 'str' in '[3]', but got {}"
+                    "- expected 'str' in [1], but got 1\n"
+                    "- expected 'str' in [2], but got []\n"
+                    "- expected 'str' in [3], but got {}"
                 ),
             ),
             (
@@ -148,9 +148,9 @@ class TestSchema(object):
                 ['a', 1, [], {}],
                 (
                     'multiple errors:\n'
-                    "- expected 'int' in '[0]', but got 'a'\n"
-                    "- expected 'int' in '[2]', but got []\n"
-                    "- expected 'int' in '[3]', but got {}"
+                    "- expected 'int' in [0], but got 'a'\n"
+                    "- expected 'int' in [2], but got []\n"
+                    "- expected 'int' in [3], but got {}"
                 ),
             ),
             (
@@ -158,8 +158,8 @@ class TestSchema(object):
                 {'a': 1, 'b': 'string', 'c': None},
                 (
                     'multiple errors:\n'
-                    "- expected 'str' in 'a', but got 1\n"
-                    "- expected 'int' in 'b', but got 'string'\n"
+                    "- expected 'str' in ['a'], but got 1\n"
+                    "- expected 'int' in ['b'], but got 'string'\n"
                     "- unknown key 'c'"
                 ),
             ),
