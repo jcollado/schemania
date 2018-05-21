@@ -12,7 +12,10 @@ from schemania.error import (
     ValidationTypeError,
     ValidationUnknownKeyError,
 )
-from schemania.schema import Schema
+from schemania.schema import (
+    Optional,
+    Schema,
+)
 from schemania.validator import (
     DictValidator,
     ListValidator,
@@ -55,6 +58,7 @@ class TestSchema(object):
             ({int: str}, {0: 'string', 1: 'string'}),
             (re.compile(r'^\d+$'), '1234567890'),
             ({re.compile(r'^\w\d'): int}, {'a1': 0, 'b2': 0}),
+            ({Optional('a'): str}, {}),
         ),
     )
     def test_validation_passes(self, raw_schema, data):

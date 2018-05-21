@@ -11,6 +11,7 @@ from schemania.error import (
     ValidationTypeError,
     ValidationUnknownKeyError,
 )
+from schemania.schema import DEFAULT_FORMATTERS
 from schemania.validator import (
     DictValidator,
     ListValidator,
@@ -18,6 +19,19 @@ from schemania.validator import (
     RegexValidator,
     TypeValidator,
 )
+
+
+class MockSchema(object):
+    """Mock schema to use as an argument for validators.
+
+    Validator objects are expected to be created within a schema, except in
+    this testing module.
+
+    """
+
+
+Schema = MockSchema()
+Schema.formatters = DEFAULT_FORMATTERS
 
 
 class TestLiteralValidator(object):
@@ -32,13 +46,13 @@ class TestLiteralValidator(object):
     )
     def test_validation_passes(self, literal, data):
         """Validation passes when data is equal to literal value."""
-        validator = LiteralValidator('<schema>', literal)
+        validator = LiteralValidator(Schema, literal)
         validator.validate(data)
 
     @pytest.mark.parametrize('literal', ('string', 1))
     def test_validation_fails(self, literal):
         """"Validation fails when data isn't equal to literal value."""
-        validator = LiteralValidator('<schema>', literal)
+        validator = LiteralValidator(Schema, literal)
         with pytest.raises(ValidationLiteralError):
             validator.validate(None)
 
@@ -57,13 +71,13 @@ class TestTypeValidator(object):
     )
     def test_validation_passes(self, type_, data):
         """Validation passes when data matches expected type."""
-        validator = TypeValidator('<schema>', type_)
+        validator = TypeValidator(Schema, type_)
         validator.validate(data)
 
     @pytest.mark.parametrize('type_', (str, int, list, dict))
     def test_validation_fails(self, type_):
         """"Validation fails when data doesn't match expected type."""
-        validator = TypeValidator('<schema>', type_)
+        validator = TypeValidator(Schema, type_)
         with pytest.raises(ValidationTypeError):
             validator.validate(None)
 
@@ -82,8 +96,8 @@ class TestListValidator(object):
     )
     def test_validation_passes(self, type_, data):
         """Validation passes when data matches expected type."""
-        type_validator = TypeValidator('<schema>', type_)
-        list_validator = ListValidator('<schema>', type_validator)
+        type_validator = TypeValidator(Schema, type_)
+        list_validator = ListValidator(Schema, type_validator)
         list_validator.validate(data)
 
     @pytest.mark.parametrize(
@@ -97,8 +111,8 @@ class TestListValidator(object):
     )
     def test_validation_fails_with_type_error(self, type_, data):
         """"Validation fails with type error."""
-        type_validator = TypeValidator('<schema>', type_)
-        list_validator = ListValidator('<schema>', type_validator)
+        type_validator = TypeValidator(Schema, type_)
+        list_validator = ListValidator(Schema, type_validator)
         with pytest.raises(ValidationTypeError):
             list_validator.validate(data)
 
@@ -113,8 +127,8 @@ class TestListValidator(object):
     )
     def test_validation_fails_with_multiple_error(self, type_, data):
         """"Validation fails with multiple error."""
-        type_validator = TypeValidator('<schema>', type_)
-        list_validator = ListValidator('<schema>', type_validator)
+        type_validator = TypeValidator(Schema, type_)
+        list_validator = ListValidator(Schema, type_validator)
         with pytest.raises(ValidationMultipleError):
             list_validator.validate(data)
 
@@ -127,14 +141,16 @@ class TestDictValidator(object):
         (
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
-                    LiteralValidator('<schema>', 'b'):
-                        TypeValidator('<schema>', int),
-                    LiteralValidator('<schema>', 'c'):
-                        TypeValidator('<schema>', list),
-                    LiteralValidator('<schema>', 'd'):
-                        TypeValidator('<schema>', dict),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
+                    LiteralValidator(Schema, 'b'):
+                        TypeValidator(Schema, int),
+                    LiteralValidator(Schema, 'c'):
+                        TypeValidator(Schema, list),
+                    LiteralValidator(Schema, 'd'):
+                        TypeValidator(Schema, dict),
+                    LiteralValidator(Schema, 'e', optional=True):
+                        TypeValidator(Schema, str),
                 },
                 {
                     'a': 'string',
@@ -147,7 +163,7 @@ class TestDictValidator(object):
     )
     def test_validation_passes(self, validators, data):
         """Validation passes when data matches expected type."""
-        dict_validator = DictValidator('<schema>', validators)
+        dict_validator = DictValidator(Schema, validators)
         dict_validator.validate(data)
 
     @pytest.mark.parametrize(
@@ -155,29 +171,29 @@ class TestDictValidator(object):
         (
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
                 },
                 {'a': None},
             ),
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', int),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, int),
                 },
                 {'a': None},
             ),
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', list),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, list),
                 },
                 {'a': None},
             ),
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', dict),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, dict),
                 },
                 {'a': None},
             ),
@@ -185,7 +201,7 @@ class TestDictValidator(object):
     )
     def test_validation_fails_with_type_error(self, validators, data):
         """Validation fails with type error."""
-        dict_validator = DictValidator('<schema>', validators)
+        dict_validator = DictValidator(Schema, validators)
         with pytest.raises(ValidationTypeError):
             dict_validator.validate(data)
 
@@ -194,14 +210,14 @@ class TestDictValidator(object):
         (
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
-                    LiteralValidator('<schema>', 'b'):
-                        TypeValidator('<schema>', int),
-                    LiteralValidator('<schema>', 'c'):
-                        TypeValidator('<schema>', list),
-                    LiteralValidator('<schema>', 'd'):
-                        TypeValidator('<schema>', dict),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
+                    LiteralValidator(Schema, 'b'):
+                        TypeValidator(Schema, int),
+                    LiteralValidator(Schema, 'c'):
+                        TypeValidator(Schema, list),
+                    LiteralValidator(Schema, 'd'):
+                        TypeValidator(Schema, dict),
                 },
                 {
                     'a': None,
@@ -212,8 +228,8 @@ class TestDictValidator(object):
             ),
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
                 },
                 {'b': None},
             ),
@@ -222,7 +238,7 @@ class TestDictValidator(object):
     def test_validation_fails_with_multiple_error(
             self, validators, data):
         """Validation fails with multiple error."""
-        dict_validator = DictValidator('<schema>', validators)
+        dict_validator = DictValidator(Schema, validators)
         with pytest.raises(ValidationMultipleError):
             dict_validator.validate(data)
 
@@ -231,8 +247,8 @@ class TestDictValidator(object):
         (
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
                 },
                 {
                     'a': 'string',
@@ -244,7 +260,7 @@ class TestDictValidator(object):
     def test_validation_fails_with_unknown_key_error(
             self, validators, data):
         """Validation fails with unknown key error."""
-        dict_validator = DictValidator('<schema>', validators)
+        dict_validator = DictValidator(Schema, validators)
         with pytest.raises(ValidationUnknownKeyError):
             dict_validator.validate(data)
 
@@ -253,8 +269,8 @@ class TestDictValidator(object):
         (
             (
                 {
-                    LiteralValidator('<schema>', 'a'):
-                        TypeValidator('<schema>', str),
+                    LiteralValidator(Schema, 'a'):
+                        TypeValidator(Schema, str),
                 },
                 {},
             ),
@@ -263,7 +279,7 @@ class TestDictValidator(object):
     def test_validation_fails_with_missing_key_error(
             self, validators, data):
         """Validation fails with mmissing key error."""
-        dict_validator = DictValidator('<schema>', validators)
+        dict_validator = DictValidator(Schema, validators)
         with pytest.raises(ValidationMissingKeyError):
             dict_validator.validate(data)
 
@@ -280,7 +296,7 @@ class TestRegexValidator(object):
     )
     def test_validation_passes(self, regex, data):
         """Validation passes when data matches against regular expression."""
-        regex_validator = RegexValidator('<schema>', regex)
+        regex_validator = RegexValidator(Schema, regex)
         regex_validator.validate(data)
 
     @pytest.mark.parametrize(
@@ -292,7 +308,7 @@ class TestRegexValidator(object):
     )
     def test_validation_fails_with_type_error(self, regex, data):
         """Validation fails with match error."""
-        regex_validator = RegexValidator('<schema>', regex)
+        regex_validator = RegexValidator(Schema, regex)
         with pytest.raises(ValidationTypeError):
             regex_validator.validate(data)
 
@@ -305,6 +321,6 @@ class TestRegexValidator(object):
     )
     def test_validation_fails_with_match_error(self, regex, data):
         """Validation fails with match error."""
-        regex_validator = RegexValidator('<schema>', regex)
+        regex_validator = RegexValidator(Schema, regex)
         with pytest.raises(ValidationMatchError):
             regex_validator.validate(data)

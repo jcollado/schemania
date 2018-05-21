@@ -90,6 +90,11 @@ class Schema(object):
         if isinstance(raw_schema, RegexObject):
             return RegexValidator(self, raw_schema)
 
+        if isinstance(raw_schema, Optional):
+            validator = self._compile(raw_schema.raw_schema)
+            validator.optional = True
+            return validator
+
         raise ValueError('Unexpected raw schema: {}'.format(raw_schema))
 
     def __call__(self, data):
@@ -101,3 +106,14 @@ class Schema(object):
 
         """
         self.validator.validate(data)
+
+
+class Optional(object):
+    """Optional marker for validators.
+
+    The use case for this marker is to use it around keys in dictionaries in
+    raw schemas, so that they are not required on validation.
+
+    """
+    def __init__(self, raw_schema):
+        self.raw_schema = raw_schema

@@ -17,6 +17,9 @@ from schemania.error import (
 
 class Validator(object):
     """Validator base class."""
+    def __init__(self, schema, optional=False):
+        self.schema = schema
+        self.optional = optional
 
 
 class LiteralValidator(Validator):
@@ -28,8 +31,8 @@ class LiteralValidator(Validator):
     :type literal: object
 
     """
-    def __init__(self, schema, literal):
-        self.schema = schema
+    def __init__(self, schema, literal, optional=False):
+        super(LiteralValidator, self).__init__(schema, optional)
         self.literal = literal
 
     def __str__(self):
@@ -61,8 +64,8 @@ class TypeValidator(Validator):
     :param type_: type
 
     """
-    def __init__(self, schema, type_):
-        self.schema = schema
+    def __init__(self, schema, type_, optional=False):
+        super(TypeValidator, self).__init__(schema, optional)
         self.type = type_
 
     def __str__(self):
@@ -96,7 +99,7 @@ class ListValidator(Validator):
     """
 
     def __init__(self, schema, element_validator):
-        self.schema = schema
+        super(ListValidator, self).__init__(schema)
         self.type = list
         self.element_validator = element_validator
 
@@ -135,7 +138,7 @@ class DictValidator(Validator):
 
     """
     def __init__(self, schema, validators):
-        self.schema = schema
+        super(DictValidator, self).__init__(schema)
         self.type = dict
         self.validators = validators
 
@@ -150,7 +153,13 @@ class DictValidator(Validator):
             raise ValidationTypeError(self, data)
 
         errors = []
-        key_validators_not_matched = set(self.validators.keys())
+        key_validators_not_matched = {
+            key_validator
+            for key_validator in self.validators.keys()
+            # Optional validators are not tracked
+            # because there's no missing key error when they are not matched
+            if not key_validator.optional
+        }
         for key, value in sorted(data.items()):
             for key_validator, value_validator in self.validators.items():
                 try:
@@ -194,8 +203,8 @@ class RegexValidator(Validator):
 
     """
 
-    def __init__(self, schema, regex):
-        self.schema = schema
+    def __init__(self, schema, regex, optional=False):
+        super(RegexValidator, self).__init__(schema, optional)
         self.type = str
         self.regex = regex
 
