@@ -5,6 +5,7 @@ import pytest
 
 from schemania.error import (
     ValidationError,
+    ValidationFunctionError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -17,6 +18,7 @@ from schemania.validator import (
     AllValidator,
     AnyValidator,
     DictValidator,
+    FunctionValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -432,4 +434,42 @@ class TestAnyValidator(object):
         """"Validation fails when all validator calls fail."""
         validator = AnyValidator(Schema, validators)
         with pytest.raises(ValidationError):
+            validator.validate(data)
+
+
+class TestFunctionValidator(object):
+    """FunctionValidator tests."""
+
+    @pytest.mark.parametrize(
+        'validator, data, expected',
+        (
+            (
+                FunctionValidator(Schema, lambda string: string.strip()),
+                '  string  ',
+                'string',
+            ),
+            (
+                FunctionValidator(Schema, lambda string: int(string)),
+                '1234567890',
+                1234567890,
+            ),
+        ),
+    )
+    def test_validation_passes(self, validator, data, expected):
+        """Validation passes when function call works as expected."""
+        new_data = validator.validate(data)
+        assert new_data == expected
+
+    @pytest.mark.parametrize(
+        'validator, data',
+        (
+            (
+                FunctionValidator(Schema, lambda string: int(string)),
+                'string',
+            ),
+        ),
+    )
+    def test_validation_fails(self, validator, data):
+        """"Validation fails when function raises an exception."""
+        with pytest.raises(ValidationFunctionError):
             validator.validate(data)

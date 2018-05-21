@@ -7,8 +7,10 @@ expected structure later.
 """
 
 import re
+import types
 
 from schemania.error import (
+    ValidationFunctionError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -17,6 +19,7 @@ from schemania.error import (
     ValidationUnknownKeyError,
 )
 from schemania.formatter import (
+    default_function_formatter,
     default_literal_formatter,
     default_match_formatter,
     default_missing_key_formatter,
@@ -28,6 +31,7 @@ from schemania.validator import (
     AllValidator,
     AnyValidator,
     DictValidator,
+    FunctionValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -37,6 +41,7 @@ from schemania.validator import (
 
 
 DEFAULT_FORMATTERS = {
+    ValidationFunctionError: default_function_formatter,
     ValidationLiteralError: default_literal_formatter,
     ValidationMatchError: default_match_formatter,
     ValidationMissingKeyError: default_missing_key_formatter,
@@ -93,13 +98,13 @@ class Schema(object):
         if isinstance(raw_schema, RegexObject):
             return RegexValidator(self, raw_schema)
 
+        if isinstance(raw_schema, types.FunctionType):
+            return FunctionValidator(self, raw_schema)
+
         if isinstance(raw_schema, Optional):
             validator = self._compile(raw_schema.raw_schema)
             validator.optional = True
             return validator
-
-        if raw_schema is Self:
-            return SelfValidator(self)
 
         if isinstance(raw_schema, All):
             validators = [
@@ -115,6 +120,9 @@ class Schema(object):
             ]
             return AnyValidator(self, validators)
 
+        if raw_schema is Self:
+            return SelfValidator(self)
+
         raise ValueError('Unexpected raw schema: {}'.format(raw_schema))
 
     def __call__(self, data):
@@ -125,7 +133,7 @@ class Schema(object):
         :raises: schemania.error.ValidationError if some problem is found
 
         """
-        self.validator.validate(data)
+        return self.validator.validate(data)
 
 
 class Optional(object):

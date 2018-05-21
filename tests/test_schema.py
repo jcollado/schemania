@@ -5,6 +5,7 @@ import re
 import pytest
 
 from schemania.error import (
+    ValidationFunctionError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -21,6 +22,7 @@ from schemania.schema import (
 )
 from schemania.validator import (
     DictValidator,
+    FunctionValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -41,6 +43,7 @@ class TestSchema(object):
             ([str], ListValidator),
             ({'a': str}, DictValidator),
             (re.compile(r'^\d+$'), RegexValidator),
+            (lambda string: string.strip(), FunctionValidator),
         ),
     )
     def test_compile(self, raw_schema, expected_cls):
@@ -49,21 +52,42 @@ class TestSchema(object):
         assert isinstance(schema.validator, expected_cls)
 
     @pytest.mark.parametrize(
-        'raw_schema, data',
+        'raw_schema, data, expected',
         (
-            ('string', 'string'),
-            (1, 1),
-            (str, 'str'),
-            (int, 1),
-            ([str], ['str']),
-            ({'a': str}, {'a': 'string'}),
-            ({str: str}, {'a': 'string', 'b': 'string'}),
-            ({int: str}, {0: 'string', 1: 'string'}),
-            (re.compile(r'^\d+$'), '1234567890'),
-            ({re.compile(r'^\w\d'): int}, {'a1': 0, 'b2': 0}),
-            ({Optional('a'): str}, {}),
+            ('string', 'string', 'string'),
+            (1, 1, 1),
+            (str, 'str', 'str'),
+            (int, 1, 1),
+            ([str], ['str'], ['str']),
+            ({'a': str}, {'a': 'string'}, {'a': 'string'}),
+            (
+                {str: str},
+                {'a': 'string', 'b': 'string'},
+                {'a': 'string', 'b': 'string'},
+            ),
+            (
+                {int: str},
+                {0: 'string', 1: 'string'},
+                {0: 'string', 1: 'string'},
+            ),
+            (re.compile(r'^\d+$'), '1234567890', '1234567890'),
+            (
+                {re.compile(r'^\w\d'): int},
+                {'a1': 0, 'b2': 0},
+                {'a1': 0, 'b2': 0},
+            ),
+            ({Optional('a'): str}, {}, {}),
             (
                 {'a': str, Optional('next'): Self},
+                {
+                    'a': 'string',
+                    'next': {
+                        'a': 'string',
+                        'next': {
+                            'a': 'string',
+                        }
+                    },
+                },
                 {
                     'a': 'string',
                     'next': {
@@ -89,17 +113,33 @@ class TestSchema(object):
                         {'a': 'string', 'children': []},
                     ],
                 },
+                {
+                    'a': 'string',
+                    'children': [
+                        {
+                            'a': 'string',
+                            'children': [
+                                {'a': 'string'},
+                            ],
+                        },
+                        {'a': 'string'},
+                        {'a': 'string', 'children': []},
+                    ],
+                },
             ),
-            (All(str), 'string'),
-            (All(str, re.compile('^[a-z]+$')), 'string'),
-            (Any(str), 'string'),
-            (Any(str, int), 'string'),
+            (All(str), 'string', 'string'),
+            (All(str, re.compile('^[a-z]+$')), 'string', 'string'),
+            (Any(str), 'string', 'string'),
+            (Any(str, int), 'string', 'string'),
+            (lambda string: string.strip(), '  string  ', 'string'),
+            (lambda string: int(string), '123467890', 123467890),
         ),
     )
-    def test_validation_passes(self, raw_schema, data):
+    def test_validation_passes(self, raw_schema, data, expected):
         """Compile raw schema and validate data that matches."""
         schema = Schema(raw_schema)
-        schema(data)
+        new_data = schema(data)
+        assert new_data == expected
 
     @pytest.mark.parametrize(
         'raw_schema, data, expected',
@@ -251,5 +291,33 @@ class TestSchema(object):
         """Compile raw schema and validation fails with literal error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationMatchError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            (
+                lambda string: int(string),
+                'string',
+                "error calling '<lambda>' with data 'string'",
+            ),
+            (
+                [lambda string: int(string)],
+                ['12347890', 'string'],
+                "error calling '<lambda>' in [1] with data 'string'",
+            ),
+            (
+                {'a': lambda string: int(string)},
+                {'a': 'string'},
+                "error calling '<lambda>' in ['a'] with data 'string'",
+            ),
+        ),
+    )
+    def test_validation_fails_with_function_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with function error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationFunctionError) as excinfo:
             schema(data)
         assert str(excinfo.value) == expected

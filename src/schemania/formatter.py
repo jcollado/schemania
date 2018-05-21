@@ -157,3 +157,28 @@ def default_match_formatter(error):
                 error.data,
             )
     )
+
+
+def default_function_formatter(error):
+    """Format function error.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.FunctionError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        return (
+            'error calling {!r} with data {!r}'
+            .format(error.validator.func.__name__, error.data)
+        )
+
+    return (
+        'error calling {!r} in {} with data {!r}'
+        .format(
+            error.validator.func.__name__,
+            _format_path(error.path),
+            error.data,
+        )
+    )

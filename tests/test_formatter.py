@@ -5,6 +5,7 @@ import re
 import pytest
 
 from schemania.error import (
+    ValidationFunctionError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -14,6 +15,7 @@ from schemania.error import (
 )
 from schemania.formatter import (
     _format_path,
+    default_function_formatter,
     default_literal_formatter,
     default_match_formatter,
     default_missing_key_formatter,
@@ -23,6 +25,7 @@ from schemania.formatter import (
 )
 from schemania.validator import (
     DictValidator,
+    FunctionValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -187,3 +190,25 @@ def test_default_match_formatter(regex, data, path, expected):
     error = ValidationMatchError(regex_validator, data)
     error.path = path
     assert default_match_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'func, data, path, expected',
+    (
+        (
+            lambda string: int, 'string', [],
+            "error calling '<lambda>' with data 'string'",
+        ),
+        (
+            lambda string: int, 'string', ['a', 0],
+            "error calling '<lambda>' in ['a'][0] with data 'string'",
+        ),
+    ),
+)
+def test_default_function_formatter(func, data, path, expected):
+    """Default function formatter returns error string as expected."""
+    function_validator = FunctionValidator('<schema>', func)
+    exception = ValueError('invalid literal')
+    error = ValidationFunctionError(function_validator, exception, data)
+    error.path = path
+    assert default_function_formatter(error) == expected

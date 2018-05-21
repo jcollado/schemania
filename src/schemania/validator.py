@@ -6,6 +6,7 @@ expected structure.
 """
 from schemania.error import (
     ValidationError,
+    ValidationFunctionError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -49,10 +50,14 @@ class LiteralValidator(Validator):
 
         :param data: Data to validate
         :type data: object
+        :returns: Validated data
+        :rtype: object
 
         """
         if not data == self.literal:
             raise ValidationLiteralError(self, data)
+
+        return data
 
 
 class TypeValidator(Validator):
@@ -82,10 +87,15 @@ class TypeValidator(Validator):
 
         :param data: Data to validate
         :type data: object
+        :returns: Validated data
+        :rtype: object
+
 
         """
         if not isinstance(data, self.type):
             raise ValidationTypeError(self, data)
+
+        return data
 
 
 class ListValidator(Validator):
@@ -108,15 +118,20 @@ class ListValidator(Validator):
 
         :param data: Data to validate
         :type data: object
+        :returns: Validated data
+        :rtype: object
+
 
         """
         if not isinstance(data, list):
             raise ValidationTypeError(self, data)
 
+        new_data = []
         errors = []
         for index, element in enumerate(data):
             try:
-                self.element_validator.validate(element)
+                new_element = self.element_validator.validate(element)
+                new_data.append(new_element)
             except ValidationError as error:
                 error.path.appendleft(index)
                 errors.append(error)
@@ -125,6 +140,8 @@ class ListValidator(Validator):
             if len(errors) == 1:
                 raise errors[0]
             raise ValidationMultipleError(self, errors, data)
+
+        return new_data
 
 
 class DictValidator(Validator):
@@ -147,11 +164,15 @@ class DictValidator(Validator):
 
         :param data: Data to validate
         :type data: object
+        :returns: Validated data
+        :rtype: object
+
 
         """
         if not isinstance(data, dict):
             raise ValidationTypeError(self, data)
 
+        new_data = {}
         errors = []
         key_validators_not_matched = {
             key_validator
@@ -165,7 +186,7 @@ class DictValidator(Validator):
                 try:
                     # TODO: handle situation in which key validates
                     # against multiple validators, but value doesn't
-                    key_validator.validate(key)
+                    new_key = key_validator.validate(key)
                 except ValidationError:
                     continue
                 else:
@@ -173,10 +194,13 @@ class DictValidator(Validator):
                         key_validators_not_matched.remove(key_validator)
 
                 try:
-                    value_validator.validate(value)
+                    new_value = value_validator.validate(value)
                 except ValidationError as error:
                     error.path.appendleft(key)
                     errors.append(error)
+                else:
+                    new_data[new_key] = new_value
+
                 break
             else:
                 errors.append(ValidationUnknownKeyError(self, key))
@@ -191,6 +215,8 @@ class DictValidator(Validator):
             if len(errors) == 1:
                 raise errors[0]
             raise ValidationMultipleError(self, errors, data)
+
+        return new_data
 
 
 class RegexValidator(Validator):
@@ -222,6 +248,9 @@ class RegexValidator(Validator):
 
         :param data: Data to validate
         :type data: object
+        :returns: Validated data
+        :rtype: object
+
 
         """
         if not isinstance(data, self.type):
@@ -230,12 +259,21 @@ class RegexValidator(Validator):
         if self.regex.match(data) is None:
             raise ValidationMatchError(self, data)
 
+        return data
+
 
 class SelfValidator(Validator):
     """Validator that checks data using the root validator recursively."""
 
     def validate(self, data):
-        """Check if data validates using the root validator."""
+        """Check if data validates using the root validator.
+
+        :param data: Data to validate
+        :type data: object
+        :returns: Validated data
+        :rtype: object
+
+        """
         return self.schema.validator.validate(data)
 
 
@@ -246,11 +284,18 @@ class AllValidator(Validator):
         self.validators = validators
 
     def validate(self, data):
-        """Check if data validates for all validators."""
+        """Check if data validates for all validators.
+
+        :param data: Data to validate
+        :type data: object
+        :returns: Validated data
+        :rtype: object
+
+        """
         errors = []
         for validator in self.validators:
             try:
-                validator.validate(data)
+                data = validator.validate(data)
             except ValidationError as error:
                 errors.append(error)
 
@@ -258,6 +303,8 @@ class AllValidator(Validator):
             if len(errors) == 1:
                 raise errors[0]
             raise ValidationMultipleError(self, errors, data)
+
+        return data
 
 
 class AnyValidator(Validator):
@@ -272,13 +319,49 @@ class AnyValidator(Validator):
         self.validators = validators
 
     def validate(self, data):
-        """Check if data validates for at least one validator."""
+        """Check if data validates for at least one validator.
+
+        :param data: Data to validate
+        :type data: object
+        :returns: Validated data
+        :rtype: object
+
+        """
         errors = []
         for validator in self.validators:
             try:
-                validator.validate(data)
+                data = validator.validate(data)
             except ValidationError as error:
                 errors.append(error)
 
         if len(errors) == len(self.validators):
             raise ValidationMultipleError(self, errors, data)
+
+        return data
+
+
+class FunctionValidator(Validator):
+    """Validator that runs a function on data.
+
+    The function can be used to write a custom validator or to transform data.
+
+    """
+    def __init__(self, schema, func):
+        super(FunctionValidator, self).__init__(schema)
+        self.func = func
+
+    def validate(self, data):
+        """Use function to validate/transform data.
+
+        :param data: Data to validate
+        :type data: object
+        :returns: Validated data
+        :rtype: object
+
+        """
+        try:
+            new_data = self.func(data)
+        except Exception as exception:
+            raise ValidationFunctionError(self, exception, data)
+
+        return new_data

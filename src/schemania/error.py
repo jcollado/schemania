@@ -121,3 +121,17 @@ class ValidationMatchError(ValidationError):
         self.validator = validator
         self.data = data
         self.path = deque()
+
+
+class ValidationFunctionError(ValidationError):
+    """Function error.
+
+    This happens when a function used as validator in the schema fails with an
+    exception.
+
+    """
+    def __init__(self, validator, exception, data):
+        self.validator = validator
+        self.exception = exception
+        self.data = data
+        self.path = deque()
