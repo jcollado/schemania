@@ -29,6 +29,7 @@ from schemania.validator import (
     ListValidator,
     LiteralValidator,
     RegexValidator,
+    SelfValidator,
     TypeValidator,
 )
 
@@ -95,6 +96,9 @@ class Schema(object):
             validator.optional = True
             return validator
 
+        if raw_schema is Self:
+            return SelfValidator(self)
+
         raise ValueError('Unexpected raw schema: {}'.format(raw_schema))
 
     def __call__(self, data):
@@ -117,3 +121,13 @@ class Optional(object):
     """
     def __init__(self, raw_schema):
         self.raw_schema = raw_schema
+
+
+class Self(object):
+    """Recursive schema.
+
+    This class is used to mark the location at which the schema validates
+    recursively. This is useful for data structures such as linked lists and
+    trees.
+
+    """

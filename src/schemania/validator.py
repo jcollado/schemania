@@ -229,3 +229,11 @@ class RegexValidator(Validator):
 
         if self.regex.match(data) is None:
             raise ValidationMatchError(self, data)
+
+
+class SelfValidator(Validator):
+    """Validator that checks data using the root validator recursively."""
+
+    def validate(self, data):
+        """Check if data validates using the root validator."""
+        return self.schema.validator.validate(data)
