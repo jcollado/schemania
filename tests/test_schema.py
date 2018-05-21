@@ -13,6 +13,8 @@ from schemania.error import (
     ValidationUnknownKeyError,
 )
 from schemania.schema import (
+    All,
+    Any,
     Optional,
     Schema,
     Self,
@@ -88,6 +90,10 @@ class TestSchema(object):
                     ],
                 },
             ),
+            (All(str), 'string'),
+            (All(str, re.compile('^[a-z]+$')), 'string'),
+            (Any(str), 'string'),
+            (Any(str, int), 'string'),
         ),
     )
     def test_validation_passes(self, raw_schema, data):
@@ -195,6 +201,24 @@ class TestSchema(object):
                     "- expected 'int' in ['b'], but got 'string'\n"
                     "- unknown key 'c'"
                 ),
+            ),
+            (
+                All(str, 'string'),
+                1,
+                (
+                    'multiple errors:\n'
+                    "- expected 'str', but got 1\n"
+                    "- expected 'string', but got 1"
+                )
+            ),
+            (
+                Any(str, 'string'),
+                1,
+                (
+                    'multiple errors:\n'
+                    "- expected 'str', but got 1\n"
+                    "- expected 'string', but got 1"
+                )
             ),
         ),
     )

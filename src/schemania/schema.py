@@ -25,6 +25,8 @@ from schemania.formatter import (
     default_unknown_key_formatter,
 )
 from schemania.validator import (
+    AllValidator,
+    AnyValidator,
     DictValidator,
     ListValidator,
     LiteralValidator,
@@ -99,6 +101,20 @@ class Schema(object):
         if raw_schema is Self:
             return SelfValidator(self)
 
+        if isinstance(raw_schema, All):
+            validators = [
+                self._compile(sub_schema)
+                for sub_schema in raw_schema.raw_schemas
+            ]
+            return AllValidator(self, validators)
+
+        if isinstance(raw_schema, Any):
+            validators = [
+                self._compile(sub_schema)
+                for sub_schema in raw_schema.raw_schemas
+            ]
+            return AnyValidator(self, validators)
+
         raise ValueError('Unexpected raw schema: {}'.format(raw_schema))
 
     def __call__(self, data):
@@ -131,3 +147,29 @@ class Self(object):
     trees.
 
     """
+
+
+class All(object):
+    """All schema.
+
+    The use case for this wrapper is to use multiple schemas instead of just
+    one.
+
+    The validation passes if all validators pass.
+
+    """
+    def __init__(self, *raw_schemas):
+        self.raw_schemas = raw_schemas
+
+
+class Any(object):
+    """Any schema.
+
+    The use case for this wrapper is to use multiple schemas instead of just
+    one.
+
+    The validation passes if any validator passes.
+
+    """
+    def __init__(self, *raw_schemas):
+        self.raw_schemas = raw_schemas

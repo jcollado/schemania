@@ -237,3 +237,48 @@ class SelfValidator(Validator):
     def validate(self, data):
         """Check if data validates using the root validator."""
         return self.schema.validator.validate(data)
+
+
+class AllValidator(Validator):
+    """Validator that checks data with multiple validators that must pass."""
+    def __init__(self, schema, validators, optional=False):
+        super(AllValidator, self).__init__(schema, optional)
+        self.validators = validators
+
+    def validate(self, data):
+        """Check if data validates for all validators."""
+        errors = []
+        for validator in self.validators:
+            try:
+                validator.validate(data)
+            except ValidationError as error:
+                errors.append(error)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ValidationMultipleError(self, errors, data)
+
+
+class AnyValidator(Validator):
+    """Validator that checks data with multiple validators.
+
+    For the validation to be considered valid, at least one of the validators
+    must pass.
+
+    """
+    def __init__(self, schema, validators, optional=False):
+        super(AnyValidator, self).__init__(schema, optional)
+        self.validators = validators
+
+    def validate(self, data):
+        """Check if data validates for at least one validator."""
+        errors = []
+        for validator in self.validators:
+            try:
+                validator.validate(data)
+            except ValidationError as error:
+                errors.append(error)
+
+        if len(errors) == len(self.validators):
+            raise ValidationMultipleError(self, errors, data)

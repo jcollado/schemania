@@ -4,6 +4,7 @@ import re
 import pytest
 
 from schemania.error import (
+    ValidationError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -13,6 +14,8 @@ from schemania.error import (
 )
 from schemania.schema import DEFAULT_FORMATTERS
 from schemania.validator import (
+    AllValidator,
+    AnyValidator,
     DictValidator,
     ListValidator,
     LiteralValidator,
@@ -324,3 +327,109 @@ class TestRegexValidator(object):
         regex_validator = RegexValidator(Schema, regex)
         with pytest.raises(ValidationMatchError):
             regex_validator.validate(data)
+
+
+class TestAllValidator(object):
+    """AllValidator tests."""
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                (
+                    TypeValidator(Schema, str),
+                    LiteralValidator(Schema, 'string'),
+                ),
+                'string',
+            ),
+            (
+                (
+                    TypeValidator(Schema, int),
+                    LiteralValidator(Schema, 1),
+                ),
+                1,
+            ),
+        ),
+    )
+    def test_validation_passes(self, validators, data):
+        """Validation passes when all validator calls pass."""
+        validator = AllValidator(Schema, validators)
+        validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                (
+                    TypeValidator(Schema, str),
+                    LiteralValidator(Schema, 1),
+                ),
+                'string',
+            ),
+            (
+                (
+                    TypeValidator(Schema, int),
+                    LiteralValidator(Schema, 'string'),
+                ),
+                1,
+            ),
+        ),
+    )
+    def test_validation_fails(self, validators, data):
+        """"Validation fails when at least one validator fails."""
+        validator = AllValidator(Schema, validators)
+        with pytest.raises(ValidationError):
+            validator.validate(data)
+
+
+class TestAnyValidator(object):
+    """AnyValidator tests."""
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                (
+                    LiteralValidator(Schema, 'string'),
+                    LiteralValidator(Schema, 1),
+                ),
+                'string',
+            ),
+            (
+                (
+                    LiteralValidator(Schema, 'string'),
+                    LiteralValidator(Schema, 1),
+                ),
+                1,
+            ),
+        ),
+    )
+    def test_validation_passes(self, validators, data):
+        """Validation passes when at least one validator call passes."""
+        validator = AnyValidator(Schema, validators)
+        validator.validate(data)
+
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                (
+                    TypeValidator(Schema, int),
+                    LiteralValidator(Schema, 1),
+                ),
+                'string',
+            ),
+            (
+                (
+                    TypeValidator(Schema, str),
+                    LiteralValidator(Schema, 'string'),
+                ),
+                1,
+            ),
+        ),
+    )
+    def test_validation_fails(self, validators, data):
+        """"Validation fails when all validator calls fail."""
+        validator = AnyValidator(Schema, validators)
+        with pytest.raises(ValidationError):
+            validator.validate(data)
