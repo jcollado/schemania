@@ -7,6 +7,7 @@ expected structure.
 from schemania.error import (
     ValidationError,
     ValidationFunctionError,
+    ValidationLengthError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -139,7 +140,7 @@ class ListValidator(Validator):
         if errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ValidationMultipleError(self, errors, data)
+            raise ValidationMultipleError(self, data, errors)
 
         return new_data
 
@@ -214,7 +215,7 @@ class DictValidator(Validator):
         if errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ValidationMultipleError(self, errors, data)
+            raise ValidationMultipleError(self, data, errors)
 
         return new_data
 
@@ -302,7 +303,7 @@ class AllValidator(Validator):
         if errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ValidationMultipleError(self, errors, data)
+            raise ValidationMultipleError(self, data, errors)
 
         return data
 
@@ -335,7 +336,7 @@ class AnyValidator(Validator):
                 errors.append(error)
 
         if len(errors) == len(self.validators):
-            raise ValidationMultipleError(self, errors, data)
+            raise ValidationMultipleError(self, data, errors)
 
         return data
 
@@ -362,6 +363,27 @@ class FunctionValidator(Validator):
         try:
             new_data = self.func(data)
         except Exception as exception:
-            raise ValidationFunctionError(self, exception, data)
+            raise ValidationFunctionError(self, data, exception)
 
         return new_data
+
+
+class LengthValidator(Validator):
+    """Validator that check data length."""
+    def __init__(self, schema, min_length=None, max_length=None):
+        super(LengthValidator, self).__init__(schema)
+        self.min_length = min_length
+        self.max_length = max_length
+
+    def validate(self, data):
+        """Check if data length is between expected values."""
+        data_length = len(data)
+        if self.min_length is not None:
+            if data_length < self.min_length:
+                raise ValidationLengthError(self, data)
+
+        if self.max_length is not None:
+            if data_length > self.max_length:
+                raise ValidationLengthError(self, data)
+
+        return data

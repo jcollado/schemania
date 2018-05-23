@@ -6,6 +6,7 @@ import pytest
 
 from schemania.error import (
     ValidationFunctionError,
+    ValidationLengthError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -16,13 +17,17 @@ from schemania.error import (
 from schemania.schema import (
     All,
     Any,
+    Length,
     Optional,
     Schema,
     Self,
 )
 from schemania.validator import (
+    AllValidator,
+    AnyValidator,
     DictValidator,
     FunctionValidator,
+    LengthValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -43,7 +48,10 @@ class TestSchema(object):
             ([str], ListValidator),
             ({'a': str}, DictValidator),
             (re.compile(r'^\d+$'), RegexValidator),
+            (All(str), AllValidator),
+            (Any(str), AnyValidator),
             (lambda string: string.strip(), FunctionValidator),
+            (Length(str), LengthValidator),
         ),
     )
     def test_compile(self, raw_schema, expected_cls):
@@ -133,6 +141,7 @@ class TestSchema(object):
             (Any(str, int), 'string', 'string'),
             (lambda string: string.strip(), '  string  ', 'string'),
             (lambda string: int(string), '123467890', 123467890),
+            (Length(min_length=0, max_length=10), 'string', 'string'),
         ),
     )
     def test_validation_passes(self, raw_schema, data, expected):
@@ -319,5 +328,48 @@ class TestSchema(object):
         """Compile raw schema and validation fails with function error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationFunctionError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            (
+                Length(min_length=1),
+                '',
+                "length must be greater than 1, got ''",
+            ),
+            (
+                Length(max_length=5),
+                'string',
+                "length must be less than 5, got 'string'",
+            ),
+            (
+                Length(min_length=1, max_length=5),
+                'string',
+                "length must be between 1 and 5, got 'string'",
+            ),
+            (
+                [Length(min_length=1)],
+                [''],
+                "length must be greater than 1 in [0], got ''",
+            ),
+            (
+                [Length(max_length=5)],
+                ['string'],
+                "length must be less than 5 in [0], got 'string'",
+            ),
+            (
+                [Length(min_length=1, max_length=5)],
+                ['string'],
+                "length must be between 1 and 5 in [0], got 'string'",
+            ),
+        ),
+    )
+    def test_validation_fails_with_length_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with length error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationLengthError) as excinfo:
             schema(data)
         assert str(excinfo.value) == expected

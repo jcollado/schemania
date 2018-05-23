@@ -6,6 +6,7 @@ import pytest
 
 from schemania.error import (
     ValidationFunctionError,
+    ValidationLengthError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -16,6 +17,7 @@ from schemania.error import (
 from schemania.formatter import (
     _format_path,
     default_function_formatter,
+    default_length_formatter,
     default_literal_formatter,
     default_match_formatter,
     default_missing_key_formatter,
@@ -26,6 +28,7 @@ from schemania.formatter import (
 from schemania.validator import (
     DictValidator,
     FunctionValidator,
+    LengthValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -152,7 +155,7 @@ def test_default_missing_key_formatter(key, path, expected):
 def test_default_multiple_formatter(errors, path, expected):
     """Default multiple formatter returns error string as expected."""
     list_validator = ListValidator('<schema>', TypeValidator('<schema>', str))
-    error = ValidationMultipleError(list_validator, errors, '<data>')
+    error = ValidationMultipleError(list_validator, '<data>', errors)
     error.path = path
     assert default_multiple_formatter(error) == expected
 
@@ -209,6 +212,48 @@ def test_default_function_formatter(func, data, path, expected):
     """Default function formatter returns error string as expected."""
     function_validator = FunctionValidator('<schema>', func)
     exception = ValueError('invalid literal')
-    error = ValidationFunctionError(function_validator, exception, data)
+    error = ValidationFunctionError(function_validator, data, exception)
     error.path = path
     assert default_function_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'min_length, max_length, data, path, expected',
+    (
+        (
+            1, None, '', [],
+            "length must be greater than 1, got ''",
+        ),
+        (
+            None, 5, 'string', [],
+            "length must be less than 5, got 'string'",
+        ),
+        (
+            1, 10, '', [],
+            "length must be between 1 and 10, got ''",
+        ),
+        (
+            1, None, '', ['a', 0],
+            "length must be greater than 1 in ['a'][0], got ''",
+        ),
+        (
+            None, 5, 'string', ['a', 0],
+            "length must be less than 5 in ['a'][0], got 'string'",
+        ),
+        (
+            1, 10, '', ['a', 0],
+            "length must be between 1 and 10 in ['a'][0], got ''",
+        ),
+    ),
+)
+def test_default_length_formatter(
+        min_length, max_length, data, path, expected):
+    """Default length formatter returns error string as expected."""
+    length_validator = LengthValidator(
+        '<schema>',
+        min_length=min_length,
+        max_length=max_length,
+    )
+    error = ValidationLengthError(length_validator, data)
+    error.path = path
+    assert default_length_formatter(error) == expected

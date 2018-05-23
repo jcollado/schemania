@@ -6,6 +6,7 @@ import pytest
 from schemania.error import (
     ValidationError,
     ValidationFunctionError,
+    ValidationLengthError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -19,6 +20,7 @@ from schemania.validator import (
     AnyValidator,
     DictValidator,
     FunctionValidator,
+    LengthValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -52,7 +54,8 @@ class TestLiteralValidator(object):
     def test_validation_passes(self, literal, data):
         """Validation passes when data is equal to literal value."""
         validator = LiteralValidator(Schema, literal)
-        validator.validate(data)
+        new_data = validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize('literal', ('string', 1))
     def test_validation_fails(self, literal):
@@ -77,7 +80,8 @@ class TestTypeValidator(object):
     def test_validation_passes(self, type_, data):
         """Validation passes when data matches expected type."""
         validator = TypeValidator(Schema, type_)
-        validator.validate(data)
+        new_data = validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize('type_', (str, int, list, dict))
     def test_validation_fails(self, type_):
@@ -103,7 +107,8 @@ class TestListValidator(object):
         """Validation passes when data matches expected type."""
         type_validator = TypeValidator(Schema, type_)
         list_validator = ListValidator(Schema, type_validator)
-        list_validator.validate(data)
+        new_data = list_validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize(
         'type_, data',
@@ -169,7 +174,8 @@ class TestDictValidator(object):
     def test_validation_passes(self, validators, data):
         """Validation passes when data matches expected type."""
         dict_validator = DictValidator(Schema, validators)
-        dict_validator.validate(data)
+        new_data = dict_validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize(
         'validators, data',
@@ -302,7 +308,8 @@ class TestRegexValidator(object):
     def test_validation_passes(self, regex, data):
         """Validation passes when data matches against regular expression."""
         regex_validator = RegexValidator(Schema, regex)
-        regex_validator.validate(data)
+        new_data = regex_validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize(
         'regex, data',
@@ -356,7 +363,8 @@ class TestAllValidator(object):
     def test_validation_passes(self, validators, data):
         """Validation passes when all validator calls pass."""
         validator = AllValidator(Schema, validators)
-        validator.validate(data)
+        new_data = validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize(
         'validators, data',
@@ -409,7 +417,8 @@ class TestAnyValidator(object):
     def test_validation_passes(self, validators, data):
         """Validation passes when at least one validator call passes."""
         validator = AnyValidator(Schema, validators)
-        validator.validate(data)
+        new_data = validator.validate(data)
+        assert new_data == data
 
     @pytest.mark.parametrize(
         'validators, data',
@@ -472,4 +481,52 @@ class TestFunctionValidator(object):
     def test_validation_fails(self, validator, data):
         """"Validation fails when function raises an exception."""
         with pytest.raises(ValidationFunctionError):
+            validator.validate(data)
+
+
+class TestLengthValidator(object):
+    """LengthValidator tests."""
+
+    @pytest.mark.parametrize(
+        'validator, data',
+        (
+            (
+                LengthValidator(Schema, min_length=1, max_length=10),
+                'string',
+            ),
+            (
+                LengthValidator(Schema, min_length=1, max_length=10),
+                ['a', 'b', 'c'],
+            ),
+        ),
+    )
+    def test_validation_passes(self, validator, data):
+        """Validation passes when function call works as expected."""
+        new_data = validator.validate(data)
+        assert new_data == data
+
+    @pytest.mark.parametrize(
+        'validator, data',
+        (
+            (
+                LengthValidator(Schema, min_length=1),
+                '',
+            ),
+            (
+                LengthValidator(Schema, max_length=5),
+                'string',
+            ),
+            (
+                LengthValidator(Schema, min_length=1),
+                [],
+            ),
+            (
+                LengthValidator(Schema, max_length=5),
+                ['a', 'b', 'c', 'd', 'e', 'f'],
+            ),
+        ),
+    )
+    def test_validation_fails(self, validator, data):
+        """"Validation fails when function raises an exception."""
+        with pytest.raises(ValidationLengthError):
             validator.validate(data)

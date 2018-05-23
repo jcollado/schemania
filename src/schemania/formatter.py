@@ -182,3 +182,65 @@ def default_function_formatter(error):
             error.data,
         )
     )
+
+
+def default_length_formatter(error):
+    """Format length error.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.FunctionError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    if len(error.path) == 0:
+        if error.validator.max_length is None:
+            return (
+                'length must be greater than {!r}, got {!r}'
+                .format(error.validator.min_length, error.data)
+            )
+
+        if error.validator.min_length is None:
+            return (
+                'length must be less than {!r}, got {!r}'
+                .format(error.validator.max_length, error.data)
+            )
+
+        return (
+            'length must be between {!r} and {!r}, got {!r}'
+            .format(
+                error.validator.min_length,
+                error.validator.max_length,
+                error.data,
+            )
+        )
+
+    if error.validator.max_length is None:
+        return (
+            'length must be greater than {!r} in {}, got {!r}'
+            .format(
+                error.validator.min_length,
+                _format_path(error.path),
+                error.data,
+            )
+        )
+
+    if error.validator.min_length is None:
+        return (
+            'length must be less than {!r} in {}, got {!r}'
+            .format(
+                error.validator.max_length,
+                _format_path(error.path),
+                error.data,
+            )
+        )
+
+    return (
+        'length must be between {!r} and {!r} in {}, got {!r}'
+        .format(
+            error.validator.min_length,
+            error.validator.max_length,
+            _format_path(error.path),
+            error.data,
+        )
+    )

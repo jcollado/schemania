@@ -9,7 +9,19 @@ from collections import deque
 
 
 class ValidationError(Exception):
-    """Validation error that uses custom error formatter from schema."""
+    """Validation error that uses custom error formatter from schema.
+
+    :param validator: The validator that created this error
+    :type validator: schemania.validator.Validator
+    :param data: The data that failed to validate
+    :type data: object
+
+    """
+
+    def __init__(self, validator, data):
+        self.validator = validator
+        self.data = data
+        self.path = deque()
 
     def __str__(self):
         formatter = self.validator.schema.formatters[self.__class__]
@@ -23,28 +35,13 @@ class ValidationLiteralError(ValidationError):
 
     """
 
-    def __init__(self, validator, data):
-        self.validator = validator
-        self.data = data
-        self.path = deque()
-
 
 class ValidationTypeError(ValidationError):
     """Type error.
 
     This happens when data doesn't match the expected type.
 
-    :param validator: Validator that found the type error
-    :type validator: schemania.validator.Validator
-    :param data: Data that failed to validate
-    :type data: object
-
     """
-
-    def __init__(self, validator, data):
-        self.validator = validator
-        self.data = data
-        self.path = deque()
 
 
 class ValidationUnknownKeyError(ValidationError):
@@ -92,18 +89,16 @@ class ValidationMultipleError(ValidationError):
 
     :param validator: Validator that found the type error
     :type validator: schemania.validator.Validator
-    :param errors: Errors that were found in the data structure
-    :type errors: schemania.error.ValidationError
     :param data: Data that failed to validate
     :type data: object
+    :param errors: Errors that were found in the data structure
+    :type errors: schemania.error.ValidationError
 
     """
 
-    def __init__(self, validator, errors, data):
-        self.validator = validator
+    def __init__(self, validator, data, errors):
+        super(ValidationMultipleError, self).__init__(validator, data)
         self.errors = errors
-        self.data = data
-        self.path = deque()
 
 
 class ValidationMatchError(ValidationError):
@@ -111,16 +106,7 @@ class ValidationMatchError(ValidationError):
 
     This happens when a regular expression doesn't match with data.
 
-    :param validator: Validator that found the type error
-    :type validator: schemania.validator.Validator
-    :param data: Data that failed to validate
-    :type data: object
-
     """
-    def __init__(self, validator, data):
-        self.validator = validator
-        self.data = data
-        self.path = deque()
 
 
 class ValidationFunctionError(ValidationError):
@@ -130,8 +116,14 @@ class ValidationFunctionError(ValidationError):
     exception.
 
     """
-    def __init__(self, validator, exception, data):
-        self.validator = validator
+    def __init__(self, validator, data, exception):
+        super(ValidationFunctionError, self).__init__(validator, data)
         self.exception = exception
-        self.data = data
-        self.path = deque()
+
+
+class ValidationLengthError(ValidationError):
+    """Length error.
+
+    This happens when data length is not within the expected range.
+
+    """

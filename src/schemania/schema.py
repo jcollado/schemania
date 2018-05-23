@@ -11,6 +11,7 @@ import types
 
 from schemania.error import (
     ValidationFunctionError,
+    ValidationLengthError,
     ValidationLiteralError,
     ValidationMatchError,
     ValidationMissingKeyError,
@@ -20,6 +21,7 @@ from schemania.error import (
 )
 from schemania.formatter import (
     default_function_formatter,
+    default_length_formatter,
     default_literal_formatter,
     default_match_formatter,
     default_missing_key_formatter,
@@ -32,6 +34,7 @@ from schemania.validator import (
     AnyValidator,
     DictValidator,
     FunctionValidator,
+    LengthValidator,
     ListValidator,
     LiteralValidator,
     RegexValidator,
@@ -42,6 +45,7 @@ from schemania.validator import (
 
 DEFAULT_FORMATTERS = {
     ValidationFunctionError: default_function_formatter,
+    ValidationLengthError: default_length_formatter,
     ValidationLiteralError: default_literal_formatter,
     ValidationMatchError: default_match_formatter,
     ValidationMissingKeyError: default_missing_key_formatter,
@@ -100,6 +104,10 @@ class Schema(object):
 
         if isinstance(raw_schema, types.FunctionType):
             return FunctionValidator(self, raw_schema)
+
+        if isinstance(raw_schema, Length):
+            return LengthValidator(
+                self, raw_schema.min_length, raw_schema.max_length)
 
         if isinstance(raw_schema, Optional):
             validator = self._compile(raw_schema.raw_schema)
@@ -181,3 +189,11 @@ class Any(object):
     """
     def __init__(self, *raw_schemas):
         self.raw_schemas = raw_schemas
+
+
+class Length(object):
+    """Length schema."""
+
+    def __init__(self, min_length=None, max_length=None):
+        self.min_length = min_length
+        self.max_length = max_length
