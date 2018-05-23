@@ -5,6 +5,7 @@ import pytest
 
 from schemania.error import (
     ValidationError,
+    ValidationExclusiveError,
     ValidationFunctionError,
     ValidationLengthError,
     ValidationLiteralError,
@@ -59,7 +60,7 @@ class TestLiteralValidator(object):
 
     @pytest.mark.parametrize('literal', ('string', 1))
     def test_validation_fails(self, literal):
-        """"Validation fails when data isn't equal to literal value."""
+        """Validation fails when data isn't equal to literal value."""
         validator = LiteralValidator(Schema, literal)
         with pytest.raises(ValidationLiteralError):
             validator.validate(None)
@@ -85,7 +86,7 @@ class TestTypeValidator(object):
 
     @pytest.mark.parametrize('type_', (str, int, list, dict))
     def test_validation_fails(self, type_):
-        """"Validation fails when data doesn't match expected type."""
+        """Validation fails when data doesn't match expected type."""
         validator = TypeValidator(Schema, type_)
         with pytest.raises(ValidationTypeError):
             validator.validate(None)
@@ -120,7 +121,7 @@ class TestListValidator(object):
         ),
     )
     def test_validation_fails_with_type_error(self, type_, data):
-        """"Validation fails with type error."""
+        """Validation fails with type error."""
         type_validator = TypeValidator(Schema, type_)
         list_validator = ListValidator(Schema, type_validator)
         with pytest.raises(ValidationTypeError):
@@ -136,7 +137,7 @@ class TestListValidator(object):
         ),
     )
     def test_validation_fails_with_multiple_error(self, type_, data):
-        """"Validation fails with multiple error."""
+        """Validation fails with multiple error."""
         type_validator = TypeValidator(Schema, type_)
         list_validator = ListValidator(Schema, type_validator)
         with pytest.raises(ValidationMultipleError):
@@ -159,7 +160,14 @@ class TestDictValidator(object):
                         TypeValidator(Schema, list),
                     LiteralValidator(Schema, 'd'):
                         TypeValidator(Schema, dict),
-                    LiteralValidator(Schema, 'e', optional=True):
+                    LiteralValidator(
+                            Schema, 'e', attributes={'optional': True}):
+                        TypeValidator(Schema, str),
+                    LiteralValidator(
+                            Schema, 'f', attributes={'exclusion_group': 'g'}):
+                        TypeValidator(Schema, str),
+                    LiteralValidator(
+                            Schema, 'g', attributes={'exclusion_group': 'g'}):
                         TypeValidator(Schema, str),
                 },
                 {
@@ -167,6 +175,7 @@ class TestDictValidator(object):
                     'b': 1,
                     'c': [],
                     'd': {},
+                    'f': 'string'
                 },
             ),
         ),
@@ -294,6 +303,40 @@ class TestDictValidator(object):
         with pytest.raises(ValidationMissingKeyError):
             dict_validator.validate(data)
 
+    @pytest.mark.parametrize(
+        'validators, data',
+        (
+            (
+                {
+                    LiteralValidator(
+                        Schema, 'a', attributes={'exclusion_group': 'g'}):
+                    TypeValidator(Schema, str),
+                    LiteralValidator(
+                        Schema, 'b', attributes={'exclusion_group': 'g'}):
+                    TypeValidator(Schema, str),
+                },
+                {},
+            ),
+            (
+                {
+                    LiteralValidator(
+                        Schema, 'a', attributes={'exclusion_group': 'g'}):
+                    TypeValidator(Schema, str),
+                    LiteralValidator(
+                        Schema, 'b', attributes={'exclusion_group': 'g'}):
+                    TypeValidator(Schema, str),
+                },
+                {'a': 'string', 'b': 'string'},
+            ),
+        ),
+    )
+    def test_validation_fails_with_exclusive_error(
+            self, validators, data):
+        """Validation fails with mmissing key error."""
+        dict_validator = DictValidator(Schema, validators)
+        with pytest.raises(ValidationExclusiveError):
+            dict_validator.validate(data)
+
 
 class TestRegexValidator(object):
     """RegexValidator tests."""
@@ -386,7 +429,7 @@ class TestAllValidator(object):
         ),
     )
     def test_validation_fails(self, validators, data):
-        """"Validation fails when at least one validator fails."""
+        """Validation fails when at least one validator fails."""
         validator = AllValidator(Schema, validators)
         with pytest.raises(ValidationError):
             validator.validate(data)
@@ -440,7 +483,7 @@ class TestAnyValidator(object):
         ),
     )
     def test_validation_fails(self, validators, data):
-        """"Validation fails when all validator calls fail."""
+        """Validation fails when all validator calls fail."""
         validator = AnyValidator(Schema, validators)
         with pytest.raises(ValidationError):
             validator.validate(data)
@@ -479,7 +522,7 @@ class TestFunctionValidator(object):
         ),
     )
     def test_validation_fails(self, validator, data):
-        """"Validation fails when function raises an exception."""
+        """Validation fails when function raises an exception."""
         with pytest.raises(ValidationFunctionError):
             validator.validate(data)
 
@@ -527,6 +570,6 @@ class TestLengthValidator(object):
         ),
     )
     def test_validation_fails(self, validator, data):
-        """"Validation fails when function raises an exception."""
+        """Validation fails when function raises an exception."""
         with pytest.raises(ValidationLengthError):
             validator.validate(data)

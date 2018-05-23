@@ -10,6 +10,7 @@ import re
 import types
 
 from schemania.error import (
+    ValidationExclusiveError,
     ValidationFunctionError,
     ValidationLengthError,
     ValidationLiteralError,
@@ -20,6 +21,7 @@ from schemania.error import (
     ValidationUnknownKeyError,
 )
 from schemania.formatter import (
+    default_exclusive_formatter,
     default_function_formatter,
     default_length_formatter,
     default_literal_formatter,
@@ -44,6 +46,7 @@ from schemania.validator import (
 
 
 DEFAULT_FORMATTERS = {
+    ValidationExclusiveError: default_exclusive_formatter,
     ValidationFunctionError: default_function_formatter,
     ValidationLengthError: default_length_formatter,
     ValidationLiteralError: default_literal_formatter,
@@ -111,7 +114,14 @@ class Schema(object):
 
         if isinstance(raw_schema, Optional):
             validator = self._compile(raw_schema.raw_schema)
-            validator.optional = True
+            validator.attributes['optional'] = True
+            return validator
+
+        if isinstance(raw_schema, Exclusive):
+            validator = self._compile(raw_schema.raw_schema)
+            validator.attributes['exclusion_group'] = (
+                raw_schema.exclusion_group
+            )
             return validator
 
         if isinstance(raw_schema, All):
@@ -155,6 +165,18 @@ class Optional(object):
         self.raw_schema = raw_schema
 
 
+class Exclusive(object):
+    """Exclusive marker for validators.
+
+    The use case for this marker is to use it around keys in dictionaries in
+    raw schemas, so that exactly one key is required for each exclusion group.
+
+    """
+    def __init__(self, raw_schema, exclusion_group):
+        self.raw_schema = raw_schema
+        self.exclusion_group = exclusion_group
+
+
 class Self(object):
     """Recursive schema.
 
@@ -192,7 +214,12 @@ class Any(object):
 
 
 class Length(object):
-    """Length schema."""
+    """Length schema.
+
+    The use case for this is to use the `len` built-in to check the length of a
+    string or a collection.
+
+    """
 
     def __init__(self, min_length=None, max_length=None):
         self.min_length = min_length

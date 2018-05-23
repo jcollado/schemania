@@ -5,6 +5,7 @@ import re
 import pytest
 
 from schemania.error import (
+    ValidationExclusiveError,
     ValidationFunctionError,
     ValidationLengthError,
     ValidationLiteralError,
@@ -16,6 +17,7 @@ from schemania.error import (
 )
 from schemania.formatter import (
     _format_path,
+    default_exclusive_formatter,
     default_function_formatter,
     default_length_formatter,
     default_literal_formatter,
@@ -257,3 +259,31 @@ def test_default_length_formatter(
     error = ValidationLengthError(length_validator, data)
     error.path = path
     assert default_length_formatter(error) == expected
+
+
+@pytest.mark.parametrize(
+    'exclusion_group, path, expected',
+    (
+        (
+            {'members': ["'a'", "'b'"]},
+            [],
+            (
+                'exactly one of the following must be passed as key: '
+                "'a', 'b'"
+            ),
+        ),
+        (
+            {'members': ["'a'", "'b'"]},
+            ['a', 0],
+            (
+                'exactly one of the following must be passed as key '
+                "in ['a'][0]: 'a', 'b'"
+            ),
+        ),
+    ),
+)
+def test_default_exclusive_formatter(exclusion_group, path, expected):
+    """Default exclusive formatter returns error string as expected."""
+    error = ValidationExclusiveError('<validator>', exclusion_group)
+    error.path = path
+    assert default_exclusive_formatter(error) == expected

@@ -5,6 +5,7 @@ import re
 import pytest
 
 from schemania.error import (
+    ValidationExclusiveError,
     ValidationFunctionError,
     ValidationLengthError,
     ValidationLiteralError,
@@ -17,6 +18,7 @@ from schemania.error import (
 from schemania.schema import (
     All,
     Any,
+    Exclusive,
     Length,
     Optional,
     Schema,
@@ -37,6 +39,9 @@ from schemania.validator import (
 
 class TestSchema(object):
     """Test schema."""
+
+    class Same(object):
+        """Used in fixtures below when expected is equal to data."""
 
     @pytest.mark.parametrize(
         'raw_schema, expected_cls',
@@ -62,27 +67,27 @@ class TestSchema(object):
     @pytest.mark.parametrize(
         'raw_schema, data, expected',
         (
-            ('string', 'string', 'string'),
+            ('string', 'string', Same),
             (1, 1, 1),
-            (str, 'str', 'str'),
-            (int, 1, 1),
-            ([str], ['str'], ['str']),
-            ({'a': str}, {'a': 'string'}, {'a': 'string'}),
+            (str, 'str', Same),
+            (int, 1, Same),
+            ([str], ['str'], Same),
+            ({'a': str}, {'a': 'string'}, Same),
             (
                 {str: str},
                 {'a': 'string', 'b': 'string'},
-                {'a': 'string', 'b': 'string'},
+                Same,
             ),
             (
                 {int: str},
                 {0: 'string', 1: 'string'},
-                {0: 'string', 1: 'string'},
+                Same,
             ),
             (re.compile(r'^\d+$'), '1234567890', '1234567890'),
             (
                 {re.compile(r'^\w\d'): int},
                 {'a1': 0, 'b2': 0},
-                {'a1': 0, 'b2': 0},
+                Same,
             ),
             ({Optional('a'): str}, {}, {}),
             (
@@ -96,15 +101,7 @@ class TestSchema(object):
                         }
                     },
                 },
-                {
-                    'a': 'string',
-                    'next': {
-                        'a': 'string',
-                        'next': {
-                            'a': 'string',
-                        }
-                    },
-                },
+                Same,
             ),
             (
                 {'a': str, Optional('children'): [Self]},
@@ -121,33 +118,39 @@ class TestSchema(object):
                         {'a': 'string', 'children': []},
                     ],
                 },
-                {
-                    'a': 'string',
-                    'children': [
-                        {
-                            'a': 'string',
-                            'children': [
-                                {'a': 'string'},
-                            ],
-                        },
-                        {'a': 'string'},
-                        {'a': 'string', 'children': []},
-                    ],
-                },
+                Same,
             ),
-            (All(str), 'string', 'string'),
-            (All(str, re.compile('^[a-z]+$')), 'string', 'string'),
-            (Any(str), 'string', 'string'),
-            (Any(str, int), 'string', 'string'),
+            (All(str), 'string', Same),
+            (All(str, re.compile('^[a-z]+$')), 'string', Same),
+            (Any(str), 'string', Same),
+            (Any(str, int), 'string', Same),
             (lambda string: string.strip(), '  string  ', 'string'),
             (lambda string: int(string), '123467890', 123467890),
-            (Length(min_length=0, max_length=10), 'string', 'string'),
+            (Length(min_length=0, max_length=10), 'string', Same),
+            (
+                {
+                    Exclusive('a', 'group_name'): str,
+                    Exclusive('b', 'group_name'): str,
+                },
+                {'a': 'string'},
+                Same,
+            ),
+            (
+                {
+                    Exclusive('a', 'group_name'): str,
+                    Exclusive('b', 'group_name'): str,
+                },
+                {'b': 'string'},
+                Same,
+            ),
         ),
     )
     def test_validation_passes(self, raw_schema, data, expected):
         """Compile raw schema and validate data that matches."""
         schema = Schema(raw_schema)
         new_data = schema(data)
+        if expected is self.Same:
+            expected = data
         assert new_data == expected
 
     @pytest.mark.parametrize(
@@ -371,5 +374,34 @@ class TestSchema(object):
         """Compile raw schema and validation fails with length error."""
         schema = Schema(raw_schema)
         with pytest.raises(ValidationLengthError) as excinfo:
+            schema(data)
+        assert str(excinfo.value) == expected
+
+    @pytest.mark.parametrize(
+        'raw_schema, data, expected',
+        (
+            (
+                {
+                    Exclusive('a', 'group_name'): str,
+                    Exclusive('b', 'group_name'): str,
+                },
+                {},
+                "exactly one of the following must be passed as key: 'a', 'b'",
+            ),
+            (
+                {
+                    Exclusive('a', 'group_name'): str,
+                    Exclusive('b', 'group_name'): str,
+                },
+                {'a': 'string', 'b': 'string'},
+                "exactly one of the following must be passed as key: 'a', 'b'",
+            ),
+        ),
+    )
+    def test_validation_fails_with_exclusive_error(
+            self, raw_schema, data, expected):
+        """Compile raw schema and validation fails with exclusive error."""
+        schema = Schema(raw_schema)
+        with pytest.raises(ValidationExclusiveError) as excinfo:
             schema(data)
         assert str(excinfo.value) == expected

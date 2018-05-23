@@ -51,8 +51,8 @@ class ValidationUnknownKeyError(ValidationError):
 
     :param validator: Validator that found the type error
     :type validator: schemania.validator.Validator
-    :param data: Data that failed to validate
-    :type data: object
+    :param key: Unknown key
+    :type key: object
 
     """
 
@@ -72,6 +72,8 @@ class ValidationMissingKeyError(ValidationError):
     :type validator: schemania.validator.Validator
     :param data: Data that failed to validate
     :type data: object
+    :param key_validator: Validator for the key that is missing
+    :type key_validator: schemania.validator.Validator
 
     """
 
@@ -115,6 +117,13 @@ class ValidationFunctionError(ValidationError):
     This happens when a function used as validator in the schema fails with an
     exception.
 
+    :param validator: The validator that created this error
+    :type validator: schemania.validator.Validator
+    :param data: The data that failed to validate
+    :type data: object
+    :param exception: Exception raised during function execution
+    :type exception: Exception
+
     """
     def __init__(self, validator, data, exception):
         super(ValidationFunctionError, self).__init__(validator, data)
@@ -127,3 +136,21 @@ class ValidationLengthError(ValidationError):
     This happens when data length is not within the expected range.
 
     """
+
+
+class ValidationExclusiveError(ValidationError):
+    """Exclusive error.
+
+    This happens when more than one key in the a dictionary within the same
+    exclusive group have matched.
+
+    :param validator: The validator that created this error
+    :type validator: schemania.validator.Validator
+    :param exclusion_group: Exclusion group metadata
+    :type exclusion_group: Dict[str, object]
+
+    """
+    def __init__(self, validator, exclusion_group):
+        self.validator = validator
+        self.exclusion_group = exclusion_group
+        self.path = deque()

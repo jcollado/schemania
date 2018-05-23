@@ -6,6 +6,7 @@ expected structure.
 """
 from schemania.error import (
     ValidationError,
+    ValidationExclusiveError,
     ValidationFunctionError,
     ValidationLengthError,
     ValidationLiteralError,
@@ -19,9 +20,11 @@ from schemania.error import (
 
 class Validator(object):
     """Validator base class."""
-    def __init__(self, schema, optional=False):
+    def __init__(self, schema, attributes=None):
         self.schema = schema
-        self.optional = optional
+        if attributes is None:
+            attributes = {}
+        self.attributes = attributes
 
 
 class LiteralValidator(Validator):
@@ -33,8 +36,8 @@ class LiteralValidator(Validator):
     :type literal: object
 
     """
-    def __init__(self, schema, literal, optional=False):
-        super(LiteralValidator, self).__init__(schema, optional)
+    def __init__(self, schema, literal, attributes=None):
+        super(LiteralValidator, self).__init__(schema, attributes)
         self.literal = literal
 
     def __str__(self):
@@ -70,8 +73,8 @@ class TypeValidator(Validator):
     :param type_: type
 
     """
-    def __init__(self, schema, type_, optional=False):
-        super(TypeValidator, self).__init__(schema, optional)
+    def __init__(self, schema, type_, attributes=None):
+        super(TypeValidator, self).__init__(schema, attributes)
         self.type = type_
 
     def __str__(self):
@@ -175,13 +178,38 @@ class DictValidator(Validator):
 
         new_data = {}
         errors = []
+
+        # Keep track of matches per exclusion group
+        # to raise errors if exactly one match doesn't happen
+        exclusion_groups = {}
+        for key_validator in self.validators.keys():
+            exclusion_group_name = (
+                key_validator.attributes.get('exclusion_group')
+            )
+            if exclusion_group_name is not None:
+                if exclusion_group_name not in exclusion_groups:
+                    exclusion_groups[exclusion_group_name] = {
+                        'name': exclusion_group_name,
+                        'members': [key_validator],
+                        'matches': 0,
+                    }
+                else:
+                    (
+                        exclusion_groups[exclusion_group_name]['members']
+                        .append(key_validator)
+                    )
+
+        # Keep track of key validators that haven't been matched,
+        # to raise missing key errors (validators are required by default)
         key_validators_not_matched = {
             key_validator
             for key_validator in self.validators.keys()
-            # Optional validators are not tracked
-            # because there's no missing key error when they are not matched
-            if not key_validator.optional
+            # Optional and exclusive validators are not tracked
+            # Their validation semantics is not the default (required)
+            if (not key_validator.attributes.get('optional', False)
+                and not key_validator.attributes.get('exclusion_group', False))
         }
+
         for key, value in sorted(data.items()):
             for key_validator, value_validator in self.validators.items():
                 try:
@@ -193,6 +221,12 @@ class DictValidator(Validator):
                 else:
                     if key_validator in key_validators_not_matched:
                         key_validators_not_matched.remove(key_validator)
+
+                    exclusion_group_name = (
+                        key_validator.attributes.get('exclusion_group')
+                    )
+                    if exclusion_group_name is not None:
+                        exclusion_groups[exclusion_group_name]['matches'] += 1
 
                 try:
                     new_value = value_validator.validate(value)
@@ -212,6 +246,11 @@ class DictValidator(Validator):
                 for key_validator in key_validators_not_matched
             ])
 
+        for exclusion_group in exclusion_groups.values():
+            if exclusion_group['matches'] != 1:
+                error = ValidationExclusiveError(self, exclusion_group)
+                errors.append(error)
+
         if errors:
             if len(errors) == 1:
                 raise errors[0]
@@ -230,8 +269,8 @@ class RegexValidator(Validator):
 
     """
 
-    def __init__(self, schema, regex, optional=False):
-        super(RegexValidator, self).__init__(schema, optional)
+    def __init__(self, schema, regex, attributes=None):
+        super(RegexValidator, self).__init__(schema, attributes)
         self.type = str
         self.regex = regex
 
@@ -280,8 +319,8 @@ class SelfValidator(Validator):
 
 class AllValidator(Validator):
     """Validator that checks data with multiple validators that must pass."""
-    def __init__(self, schema, validators, optional=False):
-        super(AllValidator, self).__init__(schema, optional)
+    def __init__(self, schema, validators, attributes=None):
+        super(AllValidator, self).__init__(schema, attributes)
         self.validators = validators
 
     def validate(self, data):
@@ -315,8 +354,8 @@ class AnyValidator(Validator):
     must pass.
 
     """
-    def __init__(self, schema, validators, optional=False):
-        super(AnyValidator, self).__init__(schema, optional)
+    def __init__(self, schema, validators, attributes=None):
+        super(AnyValidator, self).__init__(schema, attributes)
         self.validators = validators
 
     def validate(self, data):

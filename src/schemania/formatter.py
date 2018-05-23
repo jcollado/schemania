@@ -244,3 +244,27 @@ def default_length_formatter(error):
             error.data,
         )
     )
+
+
+def default_exclusive_formatter(error):
+    """Format exclusive error.
+
+    :param error: Error to be formatted
+    :type error: schemania.error.FunctionError
+    :returns: Error string representation
+    :rtype: str
+
+    """
+    members = ', '.join(
+        sorted([str(member) for member in error.exclusion_group['members']])
+    )
+    if len(error.path) == 0:
+        return (
+            'exactly one of the following must be passed as key: {}'
+            .format(members)
+        )
+
+    return (
+        'exactly one of the following must be passed as key in {}: {}'
+        .format(_format_path(error.path), members)
+    )
